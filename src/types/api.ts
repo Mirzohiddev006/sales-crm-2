@@ -182,6 +182,42 @@ export interface ReservationResponse {
   updated_at: string;
 }
 
+// Plan types (based on PlansPage.tsx)
+export interface PlanCreate {
+  month: string;
+  total_lead: number;
+  pdf: {
+    new_pdf_total: number;
+    old_pdf_total: number;
+    pdf_total: number;
+  };
+  book: {
+    new_book_total: number;
+    old_book_total: number;
+    book_total: number;
+  };
+}
+
+export interface Plan extends PlanCreate {
+  id: number;
+}
+
+// User/Client response type (based on SalesList/DetailPage.tsx)
+// This is an assumed structure because the API docs for /clients don't match the frontend code.
+export interface UserResponse {
+  id: number; // This is likely the client's own ID in the clients table
+  user_id: number; // This is the telegram user_id, used for navigation and actions
+  fullname: string;
+  phone: string;
+  conversation_file: string | null;
+  created_at: string;
+  updated_at: string;
+  // Aggregated/denormalized fields for list view
+  format: string;
+  status: string;
+  shipping_info: string | null;
+}
+
 // Image Upload
 export interface ImageUploadResponse {
   success: boolean;

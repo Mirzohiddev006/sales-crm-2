@@ -24,6 +24,7 @@ const navigation = [
   { name: "Reservatsiyalar", href: "/reservations", icon: BookOpen },
   { name: "Suhbatlar", href: "/conversations", icon: MessageSquare },
   { name: "PDF Kanallar", href: "/pdf-channels", icon: FileText },
+  { name: "Planlar", href: "/plans", icon: FileText },
 ];
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {

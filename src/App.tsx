@@ -11,6 +11,7 @@ import { ConversationsPage } from "@/pages/ConversationsPage"
 import { PDFChannelsListPage } from "@/pages/pdfchannels/PDFChannelsListPage"
 import { PDFChannelDetailPage } from "@/pages/pdfchannels/PDFChannelDetailPage"
 import { PDFChannelFormPage } from "@/pages/pdfchannels/PDFChannelFormPage"
+import { PlansPage } from "./pages/PlansPage"
 
 function App() {
   return (
@@ -50,7 +51,7 @@ function App() {
 
           {/* Reservations */}
           <Route
-            path="/reservations"
+            path="reservations"
             element={
               <ProtectedRoute>
                 <ReservationsPage />
@@ -101,6 +102,23 @@ function App() {
               </ProtectedRoute>
             }
           />
+            <Route
+            path="/pdf-channels/:id/delete"
+            element={
+              <ProtectedRoute>
+                <PDFChannelFormPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/plans"
+            element={
+              <ProtectedRoute>
+                <PlansPage />
+              </ProtectedRoute>
+            }
+          />
+          
 
           {/* Redirects */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />

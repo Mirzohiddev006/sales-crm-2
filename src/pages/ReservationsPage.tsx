@@ -17,7 +17,7 @@ import { Loading } from "@/components/common/Loading";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { cn } from "@/lib/utils";
+import { cn, formatDate} from "@/lib/utils";
 
 import { reservationsService } from "@/services/reservationsService";
 import { ReservationResponse } from "@/types/api";
@@ -35,14 +35,20 @@ export function ReservationsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const fetchReservations = async () => {
+const fetchReservations = async () => {
     try {
       setIsLoading(true);
       setError(null);
       const params: any = {};
       if (statusFilter) params.status = statusFilter;
       
-      const data = await reservationsService.getAllReservations(params);
+      const response: any = await reservationsService.getAllReservations(params);
+      
+      // XAVFSIZLIK: API dan obyekt kelsa ham, uni massivga aylantirish
+      const data = Array.isArray(response) 
+        ? response 
+        : (response?.data && Array.isArray(response.data) ? response.data : []);
+        
       setReservations(data);
     } catch (err: any) {
       setError(err.response?.data?.detail || "Reservatsiyalarni yuklashda xatolik");
@@ -51,7 +57,6 @@ export function ReservationsPage() {
       setIsRefreshing(false);
     }
   };
-
   const handleRefresh = async () => {
     try {
       setIsRefreshing(true);
@@ -65,17 +70,6 @@ export function ReservationsPage() {
   useEffect(() => {
     fetchReservations();
   }, [statusFilter]);
-
-  const formatDateTime = (dateString: string) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
-    return `${hours}:${minutes} ${day}-${month}-${year}`;
-  };
 
   if (isLoading) {
     return (
@@ -102,7 +96,7 @@ export function ReservationsPage() {
         />
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 bg-card/50 backdrop-blur-sm p-1 rounded-lg border border-border/50">
+          <div className="flex items-center gap-2 bg-card-{#021026} backdrop-blur-sm p-1 rounded-lg border border-border/50">
             <div className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground border-r border-border/50">
               <Filter className="h-4 w-4" />
               <span>Filter:</span>
@@ -124,7 +118,7 @@ export function ReservationsPage() {
             size="sm"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="bg-card/50 backdrop-blur-sm"
+            className="bg-card backdrop-{#021026}"
           >
             <RefreshCcw className={cn("mr-2 h-3.5 w-3.5", isRefreshing && "animate-spin")} />
             Yangilash
@@ -186,7 +180,7 @@ export function ReservationsPage() {
                       <div className="flex items-center gap-2 text-sm">
                         <Clock className="h-3.5 w-3.5 text-orange-500" />
                         <span className="font-medium text-foreground/90">
-                          {formatDateTime(res.reserved_until)}
+                          {formatDate(res.reserved_until)}
                         </span>
                       </div>
                     </TableCell>
@@ -204,7 +198,7 @@ export function ReservationsPage() {
                     </TableCell>
 
                     <TableCell className="text-right text-xs text-muted-foreground">
-                      {formatDateTime(res.created_at)}
+                      {formatDate(res.created_at)}
                     </TableCell>
                   </TableRow>
                 ))}

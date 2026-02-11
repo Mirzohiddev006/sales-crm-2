@@ -11,7 +11,7 @@ import { ErrorState } from "@/components/common/ErrorState";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { clientsService } from "@/services/clientsService";
 import { ClientListItem } from "@/types/api";
-import { formatDate, cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 
 const getInitials = (name: string) => {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);

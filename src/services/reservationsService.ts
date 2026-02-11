@@ -8,12 +8,18 @@ export const reservationsService = {
     limit?: number;
     offset?: number;
   }): Promise<ReservationResponse[]> {
-    const response = await api.get<ReservationResponse[]>('/reservations', { params });
-    return response.data;
+    // Boshidagi slesh olib tashlandi
+    const response = await api.get('reservations', { params });
+    
+    // Backenddan object { items: [] } kelsa yoki to'g'ridan-to'g'ri array kelsa, uni to'g'rilab olamiz
+    if (response.data && response.data.items) {
+      return response.data.items;
+    }
+    return Array.isArray(response.data) ? response.data : [];
   },
 
   async getReservationDetail(reservationId: number): Promise<ReservationResponse> {
-    const response = await api.get<ReservationResponse>(`/reservations/${reservationId}`);
+    const response = await api.get(`reservations/${reservationId}`);
     return response.data;
   },
 };
