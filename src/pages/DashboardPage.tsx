@@ -5,7 +5,6 @@ import {
   Book, 
   FileText, 
   MessageSquare,
-  TrendingUp,
   Target,
   Calendar
 } from "lucide-react";
@@ -71,7 +70,6 @@ function ProgressCircle({
 }
 
 export function DashboardPage() {
-  const navigate = useNavigate();
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

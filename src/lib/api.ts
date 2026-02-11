@@ -1,8 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 
 const VITE_API_BASE_URL =
-  (import.meta as any).env?.VITE_API_BASE_URL?.replace(/\/$/, "") ||
-  "https://poems-make-motion-indianapolis.trycloudflare.com";
+  ((import.meta as any).env?.VITE_API_BASE_URL || "https://poems-make-motion-indianapolis.trycloudflare.com/").replace(/\/$/, "");
 
 export const authErrorEvent = new EventTarget();
 
@@ -30,42 +29,25 @@ api.interceptors.request.use(
 // Response interceptor
 api.interceptors.response.use(
   (response) => response,
-  async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & {
-      _retry?: boolean;
-    };
-
+  async (error) => {
+    const originalRequest = error.config;
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-
       try {
-        const refreshToken = localStorage.getItem("refresh_token");
-        if (!refreshToken) {
-          handleLogout();
-          return Promise.reject(error);
-        }
-
-        const response = await axios.post(
-          `${VITE_API_BASE_URL}/auth/refresh`,
-          { refresh_token: refreshToken },
-        );
-
-        const { access_token, refresh_token } = response.data;
-        localStorage.setItem("access_token", access_token);
-        localStorage.setItem("refresh_token", refresh_token);
-
-        if (originalRequest.headers) {
-          originalRequest.headers.Authorization = `Bearer ${access_token}`;
-        }
-        return api(originalRequest);
+        // BU YERDA URL'NI TEKSHIRING: 
+        // Agar baseURL oxirida '/' bo'lsa, bu yerda '/auth/refresh' emas, 'auth/refresh' bo'lishi kerak
+        const res = await axios.post('https://...trycloudflare.com/auth/refresh', {
+          refresh_token: localStorage.getItem('refresh_token')
+        });
+        // ...
       } catch (refreshError) {
-        handleLogout();
-        return Promise.reject(refreshError);
+        // Agar refresh ham xato bersa, logout qildirish kerak
+        localStorage.clear();
+        window.location.href = '/login';
       }
     }
-
     return Promise.reject(error);
-  },
+  }
 );
 
 function handleLogout() {

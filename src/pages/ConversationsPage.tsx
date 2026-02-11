@@ -8,8 +8,6 @@ import { Loading } from "@/components/common/Loading";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { cn } from "@/lib/utils";
-
 import { conversationsService } from "@/services/conversationsService";
 
 export function ConversationsPage() {
