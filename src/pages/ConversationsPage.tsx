@@ -4,6 +4,12 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Loading } from "@/components/common/Loading";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
@@ -14,6 +20,9 @@ export function ConversationsPage() {
   const [conversations, setConversations] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedConv, setSelectedConv] = useState<string | null>(null);
+  const [convContent, setConvContent] = useState<string>("");
+  const [isLoadingContent, setIsLoadingContent] = useState(false);
 
   const fetchConversations = async () => {
     try {
@@ -38,6 +47,19 @@ export function ConversationsPage() {
       toast.success("Ro'yxat yangilandi");
     } catch (err) {
       toast.error("Yangilashda xatolik");
+    }
+  };
+
+  const handleViewContent = async (name: string) => {
+    try {
+      setSelectedConv(name);
+      setIsLoadingContent(true);
+      const content = await conversationsService.getConversationDetail(name);
+      setConvContent(content);
+    } catch (err) {
+      toast.error("Fayl mazmunini yuklashda xatolik");
+    } finally {
+      setIsLoadingContent(false);
     }
   };
 
@@ -87,7 +109,11 @@ export function ConversationsPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {conversations.map((conv, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow cursor-pointer">
+              <Card 
+                key={index} 
+                className="hover:shadow-lg transition-shadow cursor-pointer hover:border-primary/50"
+                onClick={() => handleViewContent(conv)}
+              >
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <div className="p-2 bg-primary/10 rounded-lg">
@@ -105,6 +131,23 @@ export function ConversationsPage() {
             ))}
           </div>
         )}
+
+        <Dialog open={!!selectedConv} onOpenChange={(open) => !open && setSelectedConv(null)}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle>{selectedConv}</DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto bg-muted/50 p-4 rounded-md border border-border/50">
+              {isLoadingContent ? (
+                <Loading />
+              ) : (
+                <pre className="text-xs font-mono whitespace-pre-wrap break-words text-foreground/80">
+                  {convContent || "Fayl bo'sh"}
+                </pre>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

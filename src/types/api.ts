@@ -21,6 +21,7 @@ export interface RefreshTokenRequest {
 
 // Client Types
 export interface ClientListItem {
+  [x: string]: ReactNode;
   id: number;
   fullname: string;
   phone: string;
@@ -36,6 +37,14 @@ export interface ClientListItem {
 export interface ClientListResponse {
   total: number;
   items: ClientListItem[];
+}
+
+export interface ClientCreate {
+  fullname: string;
+  phone: string;
+  telegram_id?: number;
+  telegram_username?: string;
+  conversation_file?: string;
 }
 
 export interface OrderItem {
@@ -183,23 +192,66 @@ export interface ReservationResponse {
 }
 
 // Plan types (based on PlansPage.tsx)
-export interface PlanCreate {
+
+export interface Plan extends PlanCreateUpdate {
+  id: number;
+}
+
+// List uchun (GET /plans)
+export interface PlanListItem {
+  id: number;
   month: string;
   total_lead: number;
-  pdf: {
+}
+
+// Create/Update uchun (POST va PATCH body)
+export interface PlanCreateUpdate {
+  month?: string;
+  total_lead?: number;
+  pdf?: {
     new_pdf_total: number;
     old_pdf_total: number;
     pdf_total: number;
   };
-  book: {
+  book?: {
     new_book_total: number;
     old_book_total: number;
     book_total: number;
   };
 }
 
-export interface Plan extends PlanCreate {
+// Detail uchun (GET /plans/{id})
+export interface PlanDetail {
   id: number;
+  month: string;
+  total_lead: number;
+  plans: {
+    counts: {
+      pdf: { new: number; old: number; total: number };
+      book: { new: number; old: number; total: number };
+    };
+    sums: {
+      pdf: { new: number; old: number; total: number };
+      book: { new: number; old: number; total: number };
+      overall: { total: number };
+    };
+  };
+  facts: {
+    counts: {
+      pdf: { new: number; old: number; total: number };
+      book: { new: number; old: number; total: number };
+    };
+    sums: {
+      pdf: { new: number; old: number; total: number };
+      book: { new: number; old: number; total: number };
+      overall: { total: number };
+    };
+  };
+  percents: {
+    pdf: { new: number; old: number; total: number };
+    book: { new: number; old: number; total: number };
+    overall: { count_percent: number; sum_percent: number };
+  };
 }
 
 // User/Client response type (based on SalesList/DetailPage.tsx)
@@ -236,4 +288,25 @@ export interface ValidationError {
 
 export interface HTTPValidationError {
   detail?: ValidationError[];
+}
+
+// Prices
+export interface PriceResponse {
+  pdf_old_price: number;
+  book_old_price: number;
+  pdf_price: number;
+  book_price: number;
+}
+
+// Feedbacks
+export interface FeedbackListResponse {
+  total: number;
+  items: FeedbackItem[];
+}
+
+// Telegram
+export interface TelegramSendImageResponse {
+  success: boolean;
+  user_id: number;
+  message: string;
 }

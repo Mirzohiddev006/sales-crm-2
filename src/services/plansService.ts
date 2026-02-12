@@ -1,51 +1,47 @@
 import api from "@/lib/api";
-import { Plan as PlanResponse, PlanCreate } from "@/types/api";
+import { PlanListItem, PlanDetail, PlanCreateUpdate } from "@/types/api";
 
 export const plansService = {
-  async getAllPlans(): Promise<PlanResponse[]> {
-    const response = await api.get("/plans");
-
-    let plans: any[] = [];
-
-    if (response.data && Array.isArray(response.data.items)) {
-      plans = response.data.items;
-    } else if (Array.isArray(response.data)) {
-      plans = response.data;
-    }
-
-    return plans.map((plan) => ({
-      ...plan,
-      pdf: plan.pdf || { new_pdf_total: 0, old_pdf_total: 0, pdf_total: 0 },
-      book: plan.book || { new_book_total: 0, old_book_total: 0, book_total: 0 },
-    }));
-  },
-
-  async createPlan(data: PlanCreate): Promise<PlanResponse> {
-    const response = await api.post<PlanResponse>("/plans", data);
+  // Rejalar ro'yxati (Faqat ID, oy va lead qaytadi)
+  async getAllPlans(): Promise<PlanListItem[]> {
+    const response = await api.get<PlanListItem[]>("/plans");
+    // Agar API wrapping (masalan { items: [] }) ishlatsa, shunga moslab o'zgartiring.
+    // Hozirgi Swaggeringizga ko'ra to'g'ridan-to'g'ri Array qaytmoqda.
     return response.data;
   },
 
+  // Reja tafsilotlari (To'liq statistika bilan)
+  async getPlanById(planId: number): Promise<PlanDetail> {
+    const response = await api.get<PlanDetail>(`/plans/${planId}`);
+    return response.data;
+  },
+
+  // Yangi reja yaratish
+  async createPlan(data: PlanCreateUpdate): Promise<any> {
+    const response = await api.post("/plans", data);
+    return response.data;
+  },
+
+  // Rejani tahrirlash (PATCH)
+  async updatePlan(planId: number, data: PlanCreateUpdate): Promise<any> {
+    const response = await api.patch(`/plans/${planId}`, data);
+    return response.data;
+  },
+
+  // Rejani o'chirish
   async deletePlan(planId: number): Promise<void> {
     await api.delete(`/plans/${planId}`);
   },
 
+  // Excel yuklash
   async exportPlanExcel(planId: number): Promise<void> {
     const response = await api.get(`/plans/${planId}/export-excel`, {
-      responseType: "blob", // Important for file downloads
+      responseType: "blob",
     });
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement("a");
     link.href = url;
-
-    const contentDisposition = response.headers["content-disposition"];
-    let filename = `plan-${planId}-export.xlsx`;
-    if (contentDisposition) {
-      const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
-      if (filenameMatch && filenameMatch.length === 2) {
-        filename = filenameMatch[1];
-      }
-    }
-    link.setAttribute("download", filename);
+    link.setAttribute("download", `plan-${planId}.xlsx`);
     document.body.appendChild(link);
     link.click();
     link.remove();

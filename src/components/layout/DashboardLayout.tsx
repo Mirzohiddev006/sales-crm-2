@@ -11,6 +11,7 @@ import {
   Menu,
   X,
   Code2,
+  MessageCircle
 } from "lucide-react";
 import { authService } from "@/services/authService";
 
@@ -25,6 +26,8 @@ const navigation = [
   { name: "Suhbatlar", href: "/conversations", icon: MessageSquare },
   { name: "PDF Kanallar", href: "/pdf-channels", icon: FileText },
   { name: "Planlar", href: "/plans", icon: FileText },
+  { name: "Narxlar", href: "/prices", icon: FileText },
+  { name: "Fikrlar", href: "/feedbacks", icon: MessageCircle }
 ];
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {

@@ -12,6 +12,9 @@ import { PDFChannelsListPage } from "@/pages/pdfchannels/PDFChannelsListPage"
 import { PDFChannelDetailPage } from "@/pages/pdfchannels/PDFChannelDetailPage"
 import { PDFChannelFormPage } from "@/pages/pdfchannels/PDFChannelFormPage"
 import { PlansPage } from "./pages/PlansPage"
+import { PricesPage } from "./pages/PricesPage"
+import { FeedbacksPage } from "./pages/FeedbacksPage"
+
 
 function App() {
   return (
@@ -118,7 +121,22 @@ function App() {
               </ProtectedRoute>
             }
           />
-          
+          <Route
+            path="/prices"
+            element={
+              <ProtectedRoute>
+                <PricesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/feedbacks"
+            element={
+              <ProtectedRoute>
+                <FeedbacksPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Redirects */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />

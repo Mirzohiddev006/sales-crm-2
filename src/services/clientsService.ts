@@ -1,5 +1,5 @@
 import api from '@/lib/api';
-import { ClientListResponse, ClientDetailResponse, ImageUploadResponse } from '@/types/api';
+import { ClientListResponse, ClientDetailResponse, ImageUploadResponse, ClientCreate } from '@/types/api';
 
 export const clientsService = {
   async getAllClients(limit: number = 20, offset: number = 0): Promise<ClientListResponse> {
@@ -11,6 +11,11 @@ export const clientsService = {
 
   async getClientDetail(clientId: number): Promise<ClientDetailResponse> {
     const response = await api.get<ClientDetailResponse>(`/clients/${clientId}`);
+    return response.data;
+  },
+
+  async createClient(data: ClientCreate): Promise<ClientDetailResponse> {
+    const response = await api.post<ClientDetailResponse>('/clients/create', data);
     return response.data;
   },
 
