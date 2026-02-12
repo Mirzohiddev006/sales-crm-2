@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, Search, Phone, Package, Calendar, Eye, Pencil, Trash2 } from "lucide-react";
+import { Users, Search, Phone, Package, Calendar, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,7 +64,7 @@ export function ClientsListPage() {
     fetchClients();
   }, []);
 
-  const handleDelete = async (id: number, e: React.MouseEvent) => {
+  const handleDelete = async (_id: number, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!confirm("Haqiqatan ham bu mijozni o'chirmoqchimisiz?")) return;
     toast.info("O'chirish funksiyasi API ga ulanmagan");

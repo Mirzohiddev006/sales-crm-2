@@ -6,7 +6,6 @@ import {
   MessageSquare,
   Target,
   Calendar,
-  ArrowRight
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/common/Loading";

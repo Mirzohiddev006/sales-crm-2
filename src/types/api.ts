@@ -1,5 +1,7 @@
 // API Types based on new backend OpenAPI schema
 
+import { ReactNode } from "react";
+
 export interface AdminLogin {
   username: string;
   password: string;

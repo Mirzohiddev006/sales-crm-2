@@ -21,10 +21,4 @@ export const telegramService = {
     });
     return response.data;
   },
-
-  // Xabar yuborish (Oldingi funksiya, agar kerak bo'lsa)
-  async sendMessage(userId: number, chatId: number | string, message: string) {
-    // API da oddiy xabar yuborish endpointi bo'lsa shu yerga yoziladi
-    // Hozircha faqat rasm yuborish so'ralgan
-  }
 };

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { DollarSign, Save, Tag, History, AlertCircle } from "lucide-react";
+import { DollarSign, Save, Tag, History } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Loading } from "@/components/common/Loading";
