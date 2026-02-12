@@ -1,9 +1,19 @@
-import api from '@/lib/api';
-import { ClientListResponse, ClientDetailResponse, ImageUploadResponse, ClientCreate } from '@/types/api';
+import api from "@/lib/api";
+import { 
+  ClientListItem, 
+  ClientDetailResponse, 
+  ClientCreate, 
+  ClientCreate as ClientUpdate 
+} from "@/types/api";
+
+interface ClientsListResponse {
+  total: number;
+  items: ClientListItem[];
+}
 
 export const clientsService = {
-  async getAllClients(limit: number = 20, offset: number = 0): Promise<ClientListResponse> {
-    const response = await api.get<ClientListResponse>('/clients/all_clients', {
+  async getAllClients(limit: number = 20, offset: number = 0): Promise<ClientsListResponse> {
+    const response = await api.get<ClientsListResponse>("/clients/all_clients", {
       params: { limit, offset },
     });
     return response.data;
@@ -15,24 +25,19 @@ export const clientsService = {
   },
 
   async createClient(data: ClientCreate): Promise<ClientDetailResponse> {
-    const response = await api.post<ClientDetailResponse>('/clients/create', data);
+    const response = await api.post<ClientDetailResponse>("/clients/create", data);
     return response.data;
   },
 
-  async sendImage(userId: number, imageFile: File, message: string): Promise<ImageUploadResponse> {
-    const formData = new FormData();
-    formData.append('image', imageFile);
-    formData.append('message', message);
-    
-    const response = await api.post<ImageUploadResponse>(
-      `/${userId}/send-image`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
-    );
+  async updateClient(clientId: number, data: ClientUpdate): Promise<ClientDetailResponse> {
+    const response = await api.patch<ClientDetailResponse>(`/clients/${clientId}`, data);
     return response.data;
   },
+
+  // Hozircha API da delete yo'q, lekin qo'shilsa shunday bo'ladi
+  /*
+  async deleteClient(clientId: number): Promise<void> {
+    await api.delete(`/clients/${clientId}`);
+  },
+  */
 };

@@ -80,6 +80,8 @@ export interface ClientDetailResponse {
   id: number;
   fullname: string;
   phone: string;
+  telegram_id?: number;
+  telegram_username?: string;
   conversation_file: string | null;
   created_at: string;
   updated_at: string;
