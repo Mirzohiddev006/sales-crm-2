@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, Search, Phone, Package, Calendar, Pencil, Trash2 } from "lucide-react";
+import { Users, Search, Phone, Package, Calendar, Trash2, FileText, BookOpen, Filter } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,15 +36,27 @@ const getInitials = (name: string) => {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 };
 
+const ORDER_STATUSES: Record<string, string> = {
+  start_bosdi: "Start bosdi",
+  ism_va_raqam_qoldirgan: "Ism va raqam qoldirgan",
+  format_tanlab_kart_raqam_olgan: "Format tanlab karta olgan",
+  pdf_uchun_tolov_qilingan: "PDF uchun to'lov qilingan",
+  kitob_uchun_tolov_qilingan: "Kitob uchun to'lov qilingan",
+  bts_ga_berilgan: "BTS ga berilgan",
+  kitob_yetib_borgan: "Kitob yetib borgan",
+  completed: "Yakunlangan",
+  canceled: "Bekor qilingan"
+};
+
 export function ClientsListPage() {
   const navigate = useNavigate();
   const [clients, setClients] = useState<ClientListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   // Edit states
-  const [editingClient, setEditingClient] = useState<ClientDetailResponse | undefined>(undefined);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const fetchClients = async () => {
@@ -70,28 +82,17 @@ export function ClientsListPage() {
     toast.info("O'chirish funksiyasi API ga ulanmagan");
   };
 
-  const handleEdit = async (id: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      // Ro'yxatda to'liq ma'lumot bo'lmasligi mumkin, shuning uchun detail olamiz
-      const detail = await clientsService.getClientDetail(id);
-      setEditingClient(detail);
-      setIsDialogOpen(true);
-    } catch (error) {
-      toast.error("Mijoz ma'lumotlarini yuklashda xatolik");
-    }
-  };
-
   const handleCreate = () => {
-    setEditingClient(undefined);
     setIsDialogOpen(true);
   };
 
-  const filteredClients = clients.filter(client => 
-    client.fullname.toLowerCase().includes(search.toLowerCase()) ||
-    client.phone.includes(search) ||
-    client.id.toString().includes(search)
-  );
+  const filteredClients = clients.filter(client => {
+    const matchesSearch = client.fullname.toLowerCase().includes(search.toLowerCase()) ||
+      client.phone.includes(search) ||
+      client.id.toString().includes(search);
+    const matchesStatus = statusFilter ? (client as any).last_order_status === statusFilter : true;
+    return matchesSearch && matchesStatus;
+  });
 
   if (isLoading) return <DashboardLayout><Loading fullScreen text="Mijozlar yuklanmoqda..." /></DashboardLayout>;
   if (error) return <DashboardLayout><ErrorState message={error} retry={fetchClients} /></DashboardLayout>;
@@ -118,6 +119,22 @@ export function ClientsListPage() {
               />
             </div>
             
+            <div className="relative w-full sm:w-48">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <select
+                className="h-10 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="">Barcha statuslar</option>
+                {Object.entries(ORDER_STATUSES).map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <Button onClick={handleCreate}>
               <Users className="mr-2 h-4 w-4" /> Mijoz qo'shish
             </Button>
@@ -128,7 +145,6 @@ export function ClientsListPage() {
         <ClientDialog 
           open={isDialogOpen} 
           onOpenChange={setIsDialogOpen}
-          client={editingClient}
           onSuccess={fetchClients}
         />
 
@@ -148,9 +164,10 @@ export function ClientsListPage() {
                   <TableHead className="w-[80px]">ID</TableHead>
                   <TableHead>Mijoz</TableHead>
                   <TableHead>Telefon</TableHead>
-                  <TableHead className="text-center">Buyurtmalar</TableHead>
-                  <TableHead className="text-center">Bron</TableHead>
-                  <TableHead className="hidden md:table-cell">Sana</TableHead>
+                  <TableHead className="text-center">PDF</TableHead>
+                  <TableHead className="text-center">Kitob</TableHead>
+                  <TableHead className="text-right">Jami Tushum</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead className="text-right w-[120px]">Amallar</TableHead>
                 </TableRow>
               </TableHeader>
@@ -181,25 +198,31 @@ export function ClientsListPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-200/50">
-                          <Package className="h-3 w-3 mr-1" /> {client.orders_count}
-                        </Badge>
+                        {(client as any).pdf_count > 0 ? (
+                          <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 border-blue-200/50">
+                            <FileText className="w-3 h-3 mr-1" /> {(client as any).pdf_count}
+                          </Badge>
+                        ) : <span className="text-muted-foreground">-</span>}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-200/50">
-                          {client.reservations_count}
-                        </Badge>
+                        {(client as any).book_count > 0 ? (
+                          <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-200/50">
+                            <BookOpen className="w-3 h-3 mr-1" /> {(client as any).book_count}
+                          </Badge>
+                        ) : <span className="text-muted-foreground">-</span>}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Calendar className="h-3.5 w-3.5 opacity-70" /> {formatDate(client.created_at)}
-                        </div>
+                      <TableCell className="text-right font-bold text-foreground/80">
+                        {(client as any).total_income?.toLocaleString()} UZS
+                      </TableCell>
+                      <TableCell>
+                        {(client as any).last_order_status && (
+                          <Badge variant="outline" className="capitalize text-xs font-normal">
+                            {ORDER_STATUSES[(client as any).last_order_status] || (client as any).last_order_status.replace(/_/g, " ")}
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
-                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-blue-600 hover:bg-blue-50" onClick={(e) => handleEdit(client.id, e)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-red-600 hover:bg-red-50" onClick={(e) => handleDelete(client.id, e)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
