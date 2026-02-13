@@ -241,7 +241,7 @@ export function ClientDetailPage() {
                             <div className="min-w-0 flex-1">
                               <p className={`text-[10px] font-bold ${textMutedClass} uppercase tracking-wider`}>Suhbat Fayli</p>
                               <div 
-                                onClick={() => navigate(`/conversations?file=${encodeURIComponent(client.conversation_file)}`)}
+                                onClick={() => navigate(`/conversations?file=${encodeURIComponent(client.conversation_file || "")}`)}
                                 className="text-sm font-medium mt-0.5 text-blue-400 hover:text-blue-300 hover:underline block truncate cursor-pointer" 
                                 title={client.conversation_file}
                               >
