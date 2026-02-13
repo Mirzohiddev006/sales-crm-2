@@ -1,12 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { 
   Target, Plus, Trash2, FileSpreadsheet, Calendar, Edit,
-  Eye, DollarSign, FileText, BookOpen, TrendingUp, X
+  DollarSign, FileText, BookOpen, X
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -114,7 +113,7 @@ const initialFormState: PlanCreateUpdate = {
 
 export function PlansPage() {
   const [plans, setPlans] = useState<PlanListItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);

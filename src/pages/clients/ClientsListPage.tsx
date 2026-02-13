@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, Search, Phone, Package, Calendar, Trash2, FileText, BookOpen, Filter } from "lucide-react";
+import { Users, Search, Phone, Trash2, FileText, BookOpen, Filter } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,8 +19,8 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
 import { ClientDialog } from "@/pages/clients/ClientsDialog"; // YANGI IMPORT
 import { clientsService } from "@/services/clientsService";
-import { ClientListItem, ClientDetailResponse } from "@/types/api";
-import { formatDate, cn } from "@/lib/utils";
+import { ClientListItem } from "@/types/api";
+import { cn } from "@/lib/utils";
 
 const avatarColors = [
   "bg-red-500/10 text-red-600 border-red-200",

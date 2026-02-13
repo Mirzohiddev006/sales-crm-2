@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { Loader2, User, Phone, Edit, Plus, FileText, BookOpen } from "lucide-react";
+import { Loader2, Edit, Plus, FileText, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,7 @@ export function ClientDialog({
   const isOpen = controlledOpen ?? internalOpen;
   const setIsOpen = setControlledOpen ?? setInternalOpen;
 
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<ClientFormData>();
+  const { register, handleSubmit, reset, setValue } = useForm<ClientFormData>();
 
   useEffect(() => {
     if (client && isOpen) {
