@@ -1,7 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 
 const VITE_API_BASE_URL =
-  ((import.meta as any).env?.VITE_API_BASE_URL || "https://reviewing-fuzzy-organize-watches.trycloudflare.com/").replace(/\/$/, "");
+  ((import.meta as any).env?.VITE_API_BASE_URL || "https://val-developed-wheel-top.trycloudflare.com/").replace(/\/$/, "");
 
 export const authErrorEvent = new EventTarget();
 

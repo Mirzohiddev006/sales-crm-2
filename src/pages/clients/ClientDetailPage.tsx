@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
-  ArrowLeft, User, Phone, Calendar, ShoppingBag, MessageSquare, Clock, FileText, Hash, Pencil, BookOpen, DollarSign, MapPin, Truck, Eye
+  ArrowLeft, User, Phone, Calendar, ShoppingBag, MessageSquare, Clock, FileText, Hash, Pencil, BookOpen, DollarSign, MapPin, Truck, Eye, ArrowUpRight, Send, Upload
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -16,7 +17,6 @@ import { Separator } from "@/components/ui/separator";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Loading } from "@/components/common/Loading";
 import { ErrorState } from "@/components/common/ErrorState";
-import { SendTelegramDialog } from "@/services/SendTelegramDialog";
 import { ClientDialog } from "@/pages/clients/ClientsDialog"; 
 import { clientsService } from "@/services/clientsService";
 import { ClientDetailResponse } from "@/types/api";
@@ -42,10 +42,15 @@ export function ClientDetailPage() {
   const [ordersList, setOrdersList] = useState<any[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
 
-  // Yangi state: Tanlangan buyurtma tafsilotlari uchun
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [isOrderDetailOpen, setIsOrderDetailOpen] = useState(false);
   
+  // Telegram Dialog States
+  const [isTelegramDialogOpen, setIsTelegramDialogOpen] = useState(false);
+  const [telegramMessage, setTelegramMessage] = useState("");
+  const [telegramImage, setTelegramImage] = useState<File | null>(null);
+  const [isSendingTelegram, setIsSendingTelegram] = useState(false);
+
   const [apiStats, setApiStats] = useState<{
     pdf_count: number;
     book_count: number;
@@ -105,10 +110,38 @@ export function ClientDetailPage() {
     }
   };
 
-  // Buyurtma ustiga bosilganda tafsilotlarni ochish
   const handleOrderClick = (order: any) => {
     setSelectedOrder(order);
     setIsOrderDetailOpen(true);
+  };
+
+  const handleSendTelegram = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrder) return;
+    if (!telegramImage || !telegramMessage) {
+      toast.error("Rasm va xabar kiritilishi shart");
+      return;
+    }
+
+    try {
+      setIsSendingTelegram(true);
+      const formData = new FormData();
+      formData.append("image", telegramImage);
+      formData.append("message", telegramMessage);
+
+      await api.post(`/telegram/order/${selectedOrder.id}/send-image`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      toast.success("Rasm muvaffaqiyatli yuborildi");
+      setIsTelegramDialogOpen(false);
+      setTelegramMessage("");
+      setTelegramImage(null);
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Yuborishda xatolik");
+    } finally {
+      setIsSendingTelegram(false);
+    }
   };
 
   const cardBaseClass = "bg-[#111e33] border-white/5 shadow-lg"; 
@@ -117,7 +150,11 @@ export function ClientDetailPage() {
   const iconBoxClass = "bg-white/5 p-2.5 rounded-xl text-white shrink-0 border border-white/10";
   const sectionHeaderClass = "bg-white/5 border-b border-white/5 py-4 px-6";
 
-  const displayStats = apiStats || (client as any).statistics || { pdf_count: 0, book_count: 0, total_sum: 0 };
+  const displayStats = apiStats || { 
+    pdf_count: (client as any).statistics?.pdf_count || 0, 
+    book_count: (client as any).statistics?.book_count || 0, 
+    total_income: (client as any).statistics?.total_sum || 0 
+  };
   const totalIncome = apiStats ? apiStats.total_income : ((client as any).statistics?.total_sum || 0);
 
   return (
@@ -153,18 +190,13 @@ export function ClientDetailPage() {
                 </div>
               </div>
               
-              <div className="flex gap-3 w-full md:w-auto">
+              <div className="flex flex-wrap gap-3 w-full md:w-auto">
                 <Button 
-                  className="bg-white text-[#021026] hover:bg-slate-200 border-none shadow-md font-semibold transition-colors" 
+                  className="bg-white text-[#021026] hover:bg-slate-200 border-none shadow-md font-bold transition-colors h-10 px-5 rounded-xl" 
                   onClick={() => setIsDialogOpen(true)}
                 >
-                  <Pencil className="h-4 w-4 mr-2" /> Tahrirlash
+                  <Pencil className="h-4 w-4 mr-2" /> TAHRIRLASH
                 </Button>
-                <SendTelegramDialog 
-                    userId={client.id} 
-                    chatId={client.telegram_id || client.id} 
-                    fullname={client.fullname} 
-                />
               </div>
             </div>
           </div>
@@ -225,7 +257,9 @@ export function ClientDetailPage() {
                           <p className={`font-bold text-sm mt-0.5 ${textWhiteClass}`}>{client.phone}</p>
                         </div>
                       </div>
+                      
                       <Separator className="bg-white/10" />
+                      
                       <div className="flex items-center gap-4">
                         <div className={iconBoxClass}><Calendar className="h-5 w-5" /></div>
                         <div>
@@ -233,19 +267,24 @@ export function ClientDetailPage() {
                           <p className={`font-bold text-sm mt-0.5 ${textWhiteClass}`}>{formatDate(client.created_at)}</p>
                         </div>
                       </div>
+
                       {client.conversation_file && (
                         <>
                           <Separator className="bg-white/10" />
                           <div className="flex items-center gap-4">
-                            <div className={iconBoxClass}><MessageSquare className="h-5 w-5" /></div>
+                            <div className={cn(iconBoxClass, "bg-indigo-500/10 text-indigo-400 border-indigo-500/20")}>
+                              <MessageSquare className="h-5 w-5" />
+                            </div>
                             <div className="min-w-0 flex-1">
-                              <p className={`text-[10px] font-bold ${textMutedClass} uppercase tracking-wider`}>Suhbat Fayli</p>
+                              <p className={`text-[10px] font-bold ${textMutedClass} uppercase tracking-wider`}>Chat Tarixi</p>
+                              
                               <div 
                                 onClick={() => navigate(`/conversations?file=${encodeURIComponent(client.conversation_file || "")}`)}
-                                className="text-sm font-medium mt-0.5 text-blue-400 hover:text-blue-300 hover:underline block truncate cursor-pointer" 
+                                className="group inline-flex items-center gap-1.5 mt-1.5 cursor-pointer bg-white/5 hover:bg-indigo-500/20 px-3 py-1.5 rounded-lg border border-white/10 hover:border-indigo-500/30 transition-all duration-300" 
                                 title={client.conversation_file}
                               >
-                                {client.conversation_file}
+                                <span className="text-sm font-bold text-slate-200 group-hover:text-indigo-300 tracking-tight">Suhbat fayliga o'tish</span>
+                                <ArrowUpRight className="h-4 w-4 text-slate-500 group-hover:text-indigo-400 transition-colors" />
                               </div>
                             </div>
                           </div>
@@ -257,6 +296,7 @@ export function ClientDetailPage() {
             </div>
             
             <div className="lg:col-span-2 space-y-6">
+              
               <Card className={cn("overflow-hidden rounded-2xl border-none", cardBaseClass)}>
                 <CardHeader className={sectionHeaderClass}>
                   <div className="flex items-center justify-between">
@@ -403,7 +443,7 @@ export function ClientDetailPage() {
                               </div>
                               <div className="text-[11px] text-slate-400 mt-1 flex gap-3 font-medium uppercase tracking-tight">
                                  <span>Sana: {formatDate(order.created_at)}</span>
-                                 {order.purchase_month && <span>Oy: {order.purchase_month}</span>}
+                                 {(order.purchase_month || order.pdf_month?.month) && <span>Oy: {order.purchase_month || order.pdf_month?.month}</span>}
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -443,6 +483,7 @@ export function ClientDetailPage() {
                       <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mt-1">{selectedOrder.format} Buyurtma</p>
                     </div>
                   </div>
+                  
                   <Badge className={cn(
                       "h-8 px-4 font-bold border-none capitalize rounded-full",
                       selectedOrder.status === 'completed' ? "bg-green-500 text-white" : "bg-white/10 text-slate-200"
@@ -459,7 +500,7 @@ export function ClientDetailPage() {
                       </div>
                       <div className="space-y-1">
                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sotuv oyi</span>
-                         <p className="text-sm font-semibold capitalize flex items-center gap-2"><Calendar size={14}/> {selectedOrder.purchase_month || "Belgilanmagan"}</p>
+                         <p className="text-sm font-semibold capitalize flex items-center gap-2"><Calendar size={14}/> {selectedOrder.purchase_month || selectedOrder.pdf_month?.month || "Belgilanmagan"}</p>
                       </div>
                    </div>
 
@@ -493,17 +534,29 @@ export function ClientDetailPage() {
                         <Separator className="bg-white/5" />
                      </>
                    )}
-
-                   <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
-                      <div className="flex items-center gap-3">
-                         <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400"><DollarSign size={18}/></div>
-                         <span className="text-sm font-bold text-slate-300 uppercase tracking-widest">To'lov miqdori</span>
-                      </div>
-                      <span className="text-xl font-black text-white">{selectedOrder.total_sum?.toLocaleString() || 0} UZS</span>
-                   </div>
+                   
+                   {selectedOrder.total_sum > 0 && (
+                     <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                        <div className="flex items-center gap-3">
+                           <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400"><DollarSign size={18}/></div>
+                           <span className="text-sm font-bold text-slate-300 uppercase tracking-widest">To'lov miqdori</span>
+                        </div>
+                        <span className="text-xl font-black text-white">{selectedOrder.total_sum?.toLocaleString() || 0} UZS</span>
+                     </div>
+                   )}
                 </div>
 
-                <div className="p-6 bg-slate-900/40 border-t border-white/5 flex justify-end">
+                {/* O'ZGARTIRILGAN QISM: Telegram va Yopish tugmasi bir qatorda joylashdi */}
+                <div className="p-6 bg-slate-900/40 border-t border-white/5 flex justify-end gap-3">
+                  {/* Faqat KITOB format bo'lsa ko'rinadi */}
+                  {selectedOrder.format === "KITOB" && (
+                     <Button 
+                       onClick={() => setIsTelegramDialogOpen(true)}
+                       className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold px-6"
+                     >
+                       <Send className="w-4 h-4 mr-2" /> Rasm yuborish
+                     </Button>
+                  )}
                   <Button 
                     onClick={() => setIsOrderDetailOpen(false)}
                     className="bg-white text-[#021026] hover:bg-slate-200 rounded-xl font-bold px-8"
@@ -513,6 +566,48 @@ export function ClientDetailPage() {
                 </div>
               </>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* 3. Telegram Send Dialog */}
+        <Dialog open={isTelegramDialogOpen} onOpenChange={setIsTelegramDialogOpen}>
+          <DialogContent className="sm:max-w-md bg-[#020617] border-[#1e293b] text-slate-200 rounded-3xl shadow-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
+                <Send className="text-indigo-400" /> Telegramga yuborish
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSendTelegram} className="space-y-4 mt-2">
+              <div className="space-y-2">
+                <Label className="text-slate-400 text-xs uppercase font-bold tracking-wider">Rasm tanlang</Label>
+                <div className="flex items-center justify-center w-full">
+                  <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-white/10 rounded-xl cursor-pointer bg-white/5 hover:bg-white/10 transition-all">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <Upload className="w-8 h-8 mb-2 text-slate-400" />
+                      <p className="text-xs text-slate-400 font-medium">{telegramImage ? telegramImage.name : "Rasm yuklash uchun bosing"}</p>
+                    </div>
+                    <input id="dropzone-file" type="file" className="hidden" accept="image/*" onChange={(e) => setTelegramImage(e.target.files?.[0] || null)} />
+                  </label>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-slate-400 text-xs uppercase font-bold tracking-wider">Xabar matni</Label>
+                <textarea 
+                  className="flex min-h-[80px] w-full rounded-xl border border-white/10 bg-[#0f172a] px-3 py-2 text-sm text-slate-200 shadow-inner placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  placeholder="Mijozga xabar..."
+                  value={telegramMessage}
+                  onChange={(e) => setTelegramMessage(e.target.value)}
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <Button type="button" variant="ghost" onClick={() => setIsTelegramDialogOpen(false)} className="text-slate-400">Bekor qilish</Button>
+                <Button type="submit" disabled={isSendingTelegram} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold">
+                  {isSendingTelegram ? "Yuborilmoqda..." : "Yuborish"}
+                </Button>
+              </div>
+            </form>
           </DialogContent>
         </Dialog>
       </div>
