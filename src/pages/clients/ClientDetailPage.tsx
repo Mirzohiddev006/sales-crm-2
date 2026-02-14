@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, User, Phone, Calendar, ShoppingBag, MessageSquare, Clock, FileText, Hash, Pencil, BookOpen, DollarSign, MapPin, Truck, Eye, ArrowUpRight, Send, Upload
@@ -40,7 +40,6 @@ export function ClientDetailPage() {
   const [isOrdersDialogOpen, setIsOrdersDialogOpen] = useState(false);
   const [ordersType, setOrdersType] = useState<"PDF" | "KITOB" | null>(null);
   const [ordersList, setOrdersList] = useState<any[]>([]);
-  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
 
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [isOrderDetailOpen, setIsOrderDetailOpen] = useState(false);
@@ -51,71 +50,52 @@ export function ClientDetailPage() {
   const [telegramImage, setTelegramImage] = useState<File | null>(null);
   const [isSendingTelegram, setIsSendingTelegram] = useState(false);
 
+  const [orderData, setOrderData] = useState<{
+    user_id: number;
+    fullname: string;
+    pdf_count: number;
+    book_count: number;
+    total_income: number;
+    orders: any[];
+  } | null>(null);
+
   const [apiStats, setApiStats] = useState<{
     pdf_count: number;
     book_count: number;
     total_income: number;
   } | null>(null);
 
-  const fetchClientDetail = async () => {
+  const fetchClientData = useCallback(async () => {
     if (!id) return;
     try {
       setIsLoading(true);
-      const data = await clientsService.getClientDetail(Number(id));
-      setClient(data);
-      
-      try {
-        const ordersRes = await api.get(`/clients/${id}/orders`);
-        setApiStats({
-            pdf_count: ordersRes.data.pdf_count,
-            book_count: ordersRes.data.book_count,
-            total_income: ordersRes.data.total_income
-        });
-      } catch (e) {
-        console.error("Failed to fetch stats", e);
-      }
+      setError(null);
+
+      // Fetch client details and order data in parallel
+      const [clientRes, ordersRes] = await Promise.all([
+        clientsService.getClientDetail(Number(id)),
+        api.get(`/clients/${id}/orders`),
+      ]);
+
+      setClient(clientRes);
+      setOrderData(ordersRes.data);
+      setApiStats({
+        pdf_count: ordersRes.data.pdf_count,
+        book_count: ordersRes.data.book_count,
+        total_income: ordersRes.data.total_income,
+      });
     } catch (err: any) {
       setError(err.response?.data?.detail || "Mijoz ma'lumotlarini yuklashda xatolik");
     } finally {
       setIsLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchClientDetail();
   }, [id]);
 
-  if (isLoading) return <DashboardLayout><Loading fullScreen text="Mijoz ma'lumotlari yuklanmoqda..." /></DashboardLayout>;
-  if (error || !client) return <DashboardLayout><ErrorState message={error || "Mijoz topilmadi"} retry={fetchClientDetail} /></DashboardLayout>;
+  useEffect(() => {
+    fetchClientData();
+  }, [fetchClientData]);
 
-  const fetchOrders = async (type: "PDF" | "KITOB") => {
-    if (!id) return;
-    setOrdersType(type);
-    setIsOrdersDialogOpen(true);
-    setIsLoadingOrders(true);
-    try {
-      const response = await api.get(`/clients/${id}/orders`);
-      const allOrders = response.data.orders || [];
-      setApiStats({
-        pdf_count: response.data.pdf_count,
-        book_count: response.data.book_count,
-        total_income: response.data.total_income
-      });
-      const filtered = allOrders.filter((o: any) => o.format === type);
-      setOrdersList(filtered);
-    } catch (err) {
-      toast.error("Buyurtmalarni yuklashda xatolik");
-    } finally {
-      setIsLoadingOrders(false);
-    }
-  };
-
-  const handleOrderClick = (order: any) => {
-    setSelectedOrder(order);
-    setIsOrderDetailOpen(true);
-  };
-
-  const handleSendTelegram = async (e: React.FormEvent) => {
+  const handleSendTelegram = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedOrder) return;
     if (!telegramImage || !telegramMessage) {
@@ -142,6 +122,25 @@ export function ClientDetailPage() {
     } finally {
       setIsSendingTelegram(false);
     }
+  }, [selectedOrder, telegramImage, telegramMessage]);
+
+  if (isLoading) return <DashboardLayout><Loading fullScreen text="Mijoz ma'lumotlari yuklanmoqda..." /></DashboardLayout>;
+  if (error || !client) return <DashboardLayout><ErrorState message={error || "Mijoz topilmadi"} retry={fetchClientData} /></DashboardLayout>;
+
+  const handleShowOrders = (type: "PDF" | "KITOB") => {
+    if (!orderData) {
+      toast.error("Buyurtma ma'lumotlari hali yuklanmagan.");
+      return;
+    }
+    setOrdersType(type);
+    setIsOrdersDialogOpen(true);
+    const filtered = orderData.orders.filter((o: any) => o.format === type);
+    setOrdersList(filtered);
+  };
+
+  const handleOrderClick = (order: any) => {
+    setSelectedOrder(order);
+    setIsOrderDetailOpen(true);
   };
 
   const cardBaseClass = "bg-[#111e33] border-white/5 shadow-lg"; 
@@ -205,13 +204,13 @@ export function ClientDetailPage() {
             open={isDialogOpen} 
             onOpenChange={setIsDialogOpen}
             client={client}
-            onSuccess={fetchClientDetail}
+            onSuccess={fetchClientData}
           />
 
           {/* Statistics Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div 
-              onClick={() => fetchOrders("PDF")}
+              onClick={() => handleShowOrders("PDF")}
               className={`rounded-2xl p-5 flex flex-col gap-1 border ${cardBaseClass} cursor-pointer hover:border-blue-500/50 transition-all hover:bg-blue-500/5 group`}
             >
               <span className={`text-xs uppercase tracking-wider font-bold ${textMutedClass}`}>PDF Xaridlar</span>
@@ -219,7 +218,7 @@ export function ClientDetailPage() {
             </div>
             
             <div 
-              onClick={() => fetchOrders("KITOB")}
+              onClick={() => handleShowOrders("KITOB")}
               className={`rounded-2xl p-5 flex flex-col gap-1 border ${cardBaseClass} cursor-pointer hover:border-emerald-500/50 transition-all hover:bg-emerald-500/5 group`}
             >
               <span className={`text-xs uppercase tracking-wider font-bold ${textMutedClass}`}>Kitob Xaridlar</span>
@@ -422,9 +421,7 @@ export function ClientDetailPage() {
             </DialogHeader>
             
             <div className="p-6">
-              {isLoadingOrders ? (
-                <div className="py-10 flex justify-center"><Loading /></div>
-              ) : ordersList.length === 0 ? (
+              {ordersList.length === 0 ? (
                 <div className="py-10 text-center text-slate-500">Buyurtmalar topilmadi</div>
               ) : (
                 <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
@@ -501,6 +498,10 @@ export function ClientDetailPage() {
                       <div className="space-y-1">
                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sotuv oyi</span>
                          <p className="text-sm font-semibold capitalize flex items-center gap-2"><Calendar size={14}/> {selectedOrder.purchase_month || selectedOrder.pdf_month?.month || "Belgilanmagan"}</p>
+                      </div>
+                      <div className="space-y-1">
+                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Buyurtma soni</span>
+                         <p className="text-sm font-semibold flex items-center gap-2"><Hash size={14}/> {selectedOrder.order_count || 1} ta</p>
                       </div>
                    </div>
 

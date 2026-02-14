@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { toast } from "sonner";
 import { 
   Target, Plus, Trash2, FileSpreadsheet, Calendar, Edit,
@@ -16,6 +16,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+} from "@/components/ui/select"; // Custom Select component usually doesn't export SelectTrigger/SelectValue
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Loading } from "@/components/common/Loading";
@@ -27,7 +30,7 @@ import { cn } from "@/lib/utils";
 
 // --- REUSABLE MINI COMPONENTS ---
 
-const SummaryCard = ({ title, value, total, icon, color = "indigo" }: any) => (
+const SummaryCard = memo(({ title, value, total, icon, color = "indigo" }: any) => (
   <div className={cn(
     "p-5 rounded-2xl border transition-all duration-300 bg-[#0f172a] border-[#1e293b] hover:border-indigo-500/40 shadow-xl",
     color === "indigo" && "hover:shadow-indigo-500/10",
@@ -55,9 +58,9 @@ const SummaryCard = ({ title, value, total, icon, color = "indigo" }: any) => (
       {total && <span className="text-sm text-slate-500 font-medium">/ {total} ta</span>}
     </div>
   </div>
-);
+));
 
-const ProgressDetailCard = ({ title, icon, data, type, accentColor }: any) => {
+const ProgressDetailCard = memo(({ title, icon, data, type, accentColor }: any) => {
   const isPdf = type === "pdf";
   const counts = isPdf ? data.facts.counts.pdf : data.facts.counts.book;
   const plansCounts = isPdf ? data.plans.counts.pdf : data.plans.counts.book;
@@ -100,7 +103,23 @@ const ProgressDetailCard = ({ title, icon, data, type, accentColor }: any) => {
       </CardContent>
     </Card>
   );
-};
+});
+
+// --- OYLAR RO'YXATI ---
+const MONTHS = [
+  { value: "january", label: "Yanvar" },
+  { value: "february", label: "Fevral" },
+  { value: "march", label: "Mart" },
+  { value: "april", label: "Aprel" },
+  { value: "may", label: "May" },
+  { value: "june", label: "Iyun" },
+  { value: "july", label: "Iyul" },
+  { value: "august", label: "Avgust" },
+  { value: "september", label: "Sentabr" },
+  { value: "october", label: "Oktabr" },
+  { value: "november", label: "Noyabr" },
+  { value: "december", label: "Dekabr" },
+];
 
 // --- MAIN PAGE ---
 
@@ -113,7 +132,7 @@ const initialFormState: PlanCreateUpdate = {
 
 export function PlansPage() {
   const [plans, setPlans] = useState<PlanListItem[]>([]);
-  const [, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -135,7 +154,9 @@ export function PlansPage() {
     }
   };
 
-  useEffect(() => { fetchPlans(); }, []);
+  useEffect(() => { 
+    fetchPlans(); 
+  }, []);
 
   const handleViewDetails = async (id: number) => {
     try {
@@ -157,7 +178,7 @@ export function PlansPage() {
       setIsSubmitting(true);
       const detail = await plansService.getPlanById(id);
       setFormData({
-        month: detail.month,
+        month: detail.month.toLowerCase(),
         total_lead: detail.total_lead,
         pdf: {
           new_pdf_total: detail.plans.counts.pdf.new,
@@ -195,6 +216,8 @@ export function PlansPage() {
         book: { ...formData.book!, book_total: Number(formData.book?.new_book_total || 0) + Number(formData.book?.old_book_total || 0) }
       };
 
+      let targetId = editingId;
+
       if (editingId) {
         await plansService.updatePlan(editingId, finalData);
         toast.success("Muvaffaqiyatli yangilandi");
@@ -202,10 +225,23 @@ export function PlansPage() {
         await plansService.createPlan(finalData);
         toast.success("Yangi reja yaratildi");
       }
+
       setIsFormOpen(false);
-      fetchPlans();
+
+      const updatedPlans = await plansService.getAllPlans();
+      setPlans(updatedPlans);
+
+      if (!editingId && updatedPlans.length > plans.length) {
+        const newPlan = updatedPlans.reduce((latest, current) => (current.id > latest.id ? current : latest));
+        targetId = newPlan.id;
+      }
+
+      if (targetId) {
+        await handleViewDetails(targetId);
+      }
     } catch (error) {
-      toast.error("Saqlashda xatolik");
+      const errorMessage = (error as any).response?.data?.detail?.[0]?.msg || (error as any).response?.data?.detail || "Saqlashda xatolik";
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -233,9 +269,17 @@ export function PlansPage() {
     }
   };
 
+  if (isLoading && plans.length === 0) {
+    return (
+      <DashboardLayout>
+        <Loading fullScreen text="Rejalar yuklanmoqda..." />
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
-      <div className="space-y-8 bg-[#021026] min-h-screen text-slate-200 p-2 animate-in fade-in duration-700">
+      <div className="space-y-8 bg-[#021026] min-h-[calc(100vh-4rem)] text-slate-200 p-2 animate-in fade-in duration-700">
         <PageHeader
           title="Oylik Rejalar"
           description="Savdo maqsadlari tahlili"
@@ -247,7 +291,12 @@ export function PlansPage() {
         />
 
         {plans.length === 0 ? (
-          <EmptyState icon={Target} title="Rejalar yo'q" description="Hozircha reja kiritilmagan" action={{ label: "Qo'shish", onClick: handleCreateClick }} />
+          <EmptyState 
+            icon={Target} 
+            title="Rejalar yo'q" 
+            description="Hozircha reja kiritilmagan" 
+            action={{ label: "Qo'shish", onClick: handleCreateClick }} 
+          />
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {plans.map((plan) => (
@@ -296,31 +345,95 @@ export function PlansPage() {
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+              
               <div className="space-y-2">
                 <Label className="text-slate-400">Oy nomi</Label>
-                <Input className="bg-[#0f172a] border-[#1e293b] focus:border-indigo-500 text-slate-100" placeholder="ex: february" value={formData.month} onChange={(e) => setFormData({...formData, month: e.target.value})} required />
+                <Select 
+                  value={formData.month} 
+                  onChange={(e) => setFormData({...formData, month: e.target.value})}
+                  required
+                  className="bg-[#0f172a] border-[#1e293b] focus:ring-1 focus:ring-indigo-500 text-slate-100"
+                >
+                  {MONTHS.map((m) => (
+                    <option key={m.value} value={m.value} className="bg-[#0f172a] text-slate-200 p-2 hover:bg-indigo-500/20 cursor-pointer">
+                      {m.label}
+                    </option>
+                  ))}
+                </Select>
               </div>
+
+              {/* AQLLI INPUT: 4 ga bo'linuvchi son kiritilganda pastdagi 4 ta input o'z-o'zidan to'ladi */}
               <div className="space-y-2">
                 <Label className="text-slate-400">Jami Lead</Label>
-                <Input type="number" className="bg-[#0f172a] border-[#1e293b] focus:border-indigo-500 text-slate-100" value={formData.total_lead} onChange={(e) => setFormData({...formData, total_lead: Number(e.target.value)})} required />
+                <Input 
+                  type="number" 
+                  className="bg-[#0f172a] border-[#1e293b] focus:border-indigo-500 text-slate-100" 
+                  value={formData.total_lead || ""} 
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    
+                    // Agar qiymat 4 ga qoldiqsiz bo'linsa, 4 ga bo'lib pastdagi inputlarga solamiz
+                    if (val > 0 && val % 4 === 0) {
+                      const quarter = val / 4;
+                      setFormData({
+                        ...formData, 
+                        total_lead: val,
+                        pdf: { ...formData.pdf!, new_pdf_total: quarter, old_pdf_total: quarter },
+                        book: { ...formData.book!, new_book_total: quarter, old_book_total: quarter }
+                      });
+                    } else {
+                      // Bo'linmasa shunchaki o'zini saqlaymiz, foydalanuvchi o'zi kiritadi
+                      setFormData({...formData, total_lead: val});
+                    }
+                  }} 
+                  required 
+                />
               </div>
             </div>
+            
             <div className="grid grid-cols-2 gap-6 p-4 bg-slate-950/50 rounded-xl border border-[#1e293b]">
               <div className="space-y-4">
                 <h4 className="font-bold text-xs text-blue-400 uppercase tracking-widest">PDF Target</h4>
-                <Input type="number" className="bg-[#0f172a] border-[#1e293b] h-8 text-xs" placeholder="New PDF" value={formData.pdf?.new_pdf_total} onChange={(e) => setFormData({...formData, pdf: {...formData.pdf!, new_pdf_total: Number(e.target.value)}})} />
-                <Input type="number" className="bg-[#0f172a] border-[#1e293b] h-8 text-xs" placeholder="Old PDF" value={formData.pdf?.old_pdf_total} onChange={(e) => setFormData({...formData, pdf: {...formData.pdf!, old_pdf_total: Number(e.target.value)}})} />
+                <Input 
+                  type="number" 
+                  className="bg-[#0f172a] border-[#1e293b] h-8 text-xs text-slate-200" 
+                  placeholder="New PDF" 
+                  value={formData.pdf?.new_pdf_total === 0 ? "" : formData.pdf?.new_pdf_total} 
+                  onChange={(e) => setFormData({...formData, pdf: {...formData.pdf!, new_pdf_total: Number(e.target.value)}})} 
+                />
+                <Input 
+                  type="number" 
+                  className="bg-[#0f172a] border-[#1e293b] h-8 text-xs text-slate-200" 
+                  placeholder="Old PDF" 
+                  value={formData.pdf?.old_pdf_total === 0 ? "" : formData.pdf?.old_pdf_total} 
+                  onChange={(e) => setFormData({...formData, pdf: {...formData.pdf!, old_pdf_total: Number(e.target.value)}})} 
+                />
               </div>
               <div className="space-y-4">
                 <h4 className="font-bold text-xs text-emerald-400 uppercase tracking-widest">Book Target</h4>
-                <Input type="number" className="bg-[#0f172a] border-[#1e293b] h-8 text-xs" placeholder="New Book" value={formData.book?.new_book_total} onChange={(e) => setFormData({...formData, book: {...formData.book!, new_book_total: Number(e.target.value)}})} />
-                <Input type="number" className="bg-[#0f172a] border-[#1e293b] h-8 text-xs" placeholder="Old Book" value={formData.book?.old_book_total} onChange={(e) => setFormData({...formData, book: {...formData.book!, old_book_total: Number(e.target.value)}})} />
+                <Input 
+                  type="number" 
+                  className="bg-[#0f172a] border-[#1e293b] h-8 text-xs text-slate-200" 
+                  placeholder="New Book" 
+                  value={formData.book?.new_book_total === 0 ? "" : formData.book?.new_book_total} 
+                  onChange={(e) => setFormData({...formData, book: {...formData.book!, new_book_total: Number(e.target.value)}})} 
+                />
+                <Input 
+                  type="number" 
+                  className="bg-[#0f172a] border-[#1e293b] h-8 text-xs text-slate-200" 
+                  placeholder="Old Book" 
+                  value={formData.book?.old_book_total === 0 ? "" : formData.book?.old_book_total} 
+                  onChange={(e) => setFormData({...formData, book: {...formData.book!, old_book_total: Number(e.target.value)}})} 
+                />
               </div>
             </div>
+            
             <DialogFooter>
-              <Button type="button" variant="ghost" className="text-slate-500 hover:text-slate-300" onClick={() => setIsFormOpen(false)}>Bekor qilish</Button>
-              <Button type="submit" className="bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-500/20" disabled={isSubmitting}>
+              <Button type="button" variant="ghost" className="text-slate-500 hover:text-slate-300" onClick={() => setIsFormOpen(false)}>
+                Bekor qilish
+              </Button>
+              <Button type="submit" className="bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 text-white font-bold" disabled={isSubmitting}>
                 {isSubmitting ? "Saqlanmoqda..." : "Saqlash"}
               </Button>
             </DialogFooter>
@@ -328,112 +441,141 @@ export function PlansPage() {
         </DialogContent>
       </Dialog>
 
-<Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-  <DialogContent className="sm:max-w-5xl bg-[#020617] border-[#1e293b] text-slate-200 custom-scrollbar overflow-y-auto max-h-[90vh] p-0 border-none shadow-2xl">
-    {isLoadingDetail ? (
-      <div className="py-24 flex justify-center"><Loading /></div>
-    ) : selectedPlanDetail ? (
-      <div className="animate-in zoom-in-95 duration-300">
-        
-        {/* --- YANGILANGAN HEADER (Tugmalar qo'shildi) --- */}
-        <div className="p-8 border-b border-[#1e293b] bg-slate-900/20 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-5">
-            <div className="p-4 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 shadow-inner">
-              <Calendar className="h-8 w-8 text-indigo-400" />
-            </div>
-            <div>
-              <h2 className="text-4xl font-black capitalize tracking-tight text-slate-100 leading-none">
-                {selectedPlanDetail.month}
-              </h2>
-              <p className="text-[10px] uppercase font-bold text-indigo-400/60 tracking-[0.3em] mt-3 italic">
-                Oylik Savdo Analitikasi
-              </p>
-            </div>
-          </div>
+      {/* DETAIL DIALOG */}
+      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+        <DialogContent className="sm:max-w-5xl bg-[#020617] border-[#1e293b] text-slate-200 custom-scrollbar overflow-y-auto max-h-[90vh] p-0 border-none shadow-2xl">
+          {isLoadingDetail ? (
+            <div className="py-24 flex justify-center"><Loading /></div>
+          ) : selectedPlanDetail ? (
+            <div className="animate-in zoom-in-95 duration-300">
+              
+              {/* HEADER WITH ACTIONS */}
+              <div className="p-8 border-b border-[#1e293b] bg-slate-900/20 flex flex-col md:flex-row justify-between items-center gap-6">
+                <div className="flex items-center gap-5">
+                  <div className="p-4 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 shadow-inner">
+                    <Calendar className="h-8 w-8 text-indigo-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-4xl font-black capitalize tracking-tight text-slate-100 leading-none">
+                      {selectedPlanDetail.month}
+                    </h2>
+                    <p className="text-[10px] uppercase font-bold text-indigo-400/60 tracking-[0.3em] mt-3 italic">
+                      Oylik Savdo Analitikasi
+                    </p>
+                  </div>
+                </div>
 
-          {/* Dialog ichidagi Action tugmalar */}
-          <div className="flex items-center gap-3 bg-[#0f172a] p-2 rounded-2xl border border-[#1e293b] shadow-lg">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-10 w-10 text-indigo-400 hover:bg-indigo-500/10 rounded-xl transition-all"
-              onClick={(e) => {
-                setIsDetailOpen(false); // Avval buni yopamiz
-                handleEditClick(selectedPlanDetail.id, e);
-              }}
-            >
-              <Edit className="h-5 w-5" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-10 w-10 text-emerald-400 hover:bg-emerald-500/10 rounded-xl transition-all"
-              onClick={(e) => handleExport(selectedPlanDetail.id, e)}
-            >
-              <FileSpreadsheet className="h-5 w-5" />
-            </Button>
-            <div className="w-[1px] h-6 bg-[#1e293b] mx-1" />
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-10 w-10 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
-              onClick={(e) => {
-                handleDelete(selectedPlanDetail.id, e);
-                setIsDetailOpen(false);
-              }}
-            >
-              <Trash2 className="h-5 w-5" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-10 w-10 text-slate-500 hover:bg-slate-800 rounded-xl transition-all ml-2"
-              onClick={() => setIsDetailOpen(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
-
-        {/* --- QOLGAN KONTENT QISMI --- */}
-        <div className="p-8 space-y-8 bg-[radial-gradient(circle_at_top_right,#1e293b33,transparent)]">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <SummaryCard title="Jami Lead" value={selectedPlanDetail.total_lead} icon={<Target className="w-5 h-5"/>} color="indigo" />
-            <SummaryCard title="PDF Fact" value={selectedPlanDetail.facts.counts.pdf.total} total={selectedPlanDetail.plans.counts.pdf.total} color="blue" icon={<FileText className="w-5 h-5"/>} />
-            <SummaryCard title="Book Fact" value={selectedPlanDetail.facts.counts.book.total} total={selectedPlanDetail.plans.counts.book.total} color="emerald" icon={<BookOpen className="w-5 h-5"/>} />
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <ProgressDetailCard title="PDF DETAILS" icon={<FileText className="w-5 h-5" />} data={selectedPlanDetail} type="pdf" accentColor="blue" />
-            <ProgressDetailCard title="BOOK DETAILS" icon={<BookOpen className="w-5 h-5" />} data={selectedPlanDetail} type="book" accentColor="emerald" />
-          </div>
-
-          {/* Umumiy Natija Footer */}
-          <div className="bg-[#0f172a] border border-indigo-500/30 p-8 rounded-3xl flex flex-col md:flex-row justify-between items-center shadow-2xl relative overflow-hidden group">
-            <div className="absolute inset-0 bg-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="flex items-center gap-5 z-10">
-              <div className="bg-indigo-600 p-4 rounded-2xl shadow-[0_0_25px_rgba(79,70,229,0.4)]">
-                <DollarSign className="h-8 w-8 text-white" />
+                <div className="flex items-center gap-3 bg-[#0f172a] p-2 rounded-2xl border border-[#1e293b] shadow-lg">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-10 w-10 text-indigo-400 hover:bg-indigo-500/10 rounded-xl transition-all"
+                    onClick={(e) => {
+                      setIsDetailOpen(false); 
+                      handleEditClick(selectedPlanDetail.id, e);
+                    }}
+                  >
+                    <Edit className="h-5 w-5" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-10 w-10 text-emerald-400 hover:bg-emerald-500/10 rounded-xl transition-all"
+                    onClick={(e) => handleExport(selectedPlanDetail.id, e)}
+                  >
+                    <FileSpreadsheet className="h-5 w-5" />
+                  </Button>
+                  <div className="w-[1px] h-6 bg-[#1e293b] mx-1" />
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-10 w-10 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
+                    onClick={(e) => {
+                      handleDelete(selectedPlanDetail.id, e);
+                      setIsDetailOpen(false);
+                    }}
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-10 w-10 text-slate-500 hover:bg-slate-800 rounded-xl transition-all ml-2"
+                    onClick={() => setIsDetailOpen(false)}
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
               </div>
-              <div>
-                <span className="font-black text-xl tracking-[0.2em] uppercase text-indigo-100 block">Umumiy Natija</span>
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest italic">Fakt vs Reja (Summa)</span>
+
+              {/* DETAILS CONTENT */}
+              <div className="p-8 space-y-8 bg-[radial-gradient(circle_at_top_right,#1e293b33,transparent)]">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <SummaryCard 
+                    title="Jami Lead" 
+                    value={selectedPlanDetail.total_lead} 
+                    icon={<Target className="w-5 h-5"/>} 
+                    color="indigo" 
+                  />
+                  <SummaryCard 
+                    title="PDF Fact" 
+                    value={selectedPlanDetail.facts.counts.pdf.total} 
+                    total={selectedPlanDetail.plans.counts.pdf.total} 
+                    color="blue" 
+                    icon={<FileText className="w-5 h-5"/>} 
+                  />
+                  <SummaryCard 
+                    title="Book Fact" 
+                    value={selectedPlanDetail.facts.counts.book.total} 
+                    total={selectedPlanDetail.plans.counts.book.total} 
+                    color="emerald" 
+                    icon={<BookOpen className="w-5 h-5"/>} 
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <ProgressDetailCard 
+                    title="PDF DETAILS" 
+                    icon={<FileText className="w-5 h-5" />} 
+                    data={selectedPlanDetail} 
+                    type="pdf" 
+                    accentColor="blue" 
+                  />
+                  <ProgressDetailCard 
+                    title="BOOK DETAILS" 
+                    icon={<BookOpen className="w-5 h-5" />} 
+                    data={selectedPlanDetail} 
+                    type="book" 
+                    accentColor="emerald" 
+                  />
+                </div>
+
+                {/* OVERALL RESULT FOOTER */}
+                <div className="bg-[#0f172a] border border-indigo-500/30 p-8 rounded-3xl flex flex-col md:flex-row justify-between items-center shadow-2xl relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="flex items-center gap-5 z-10">
+                    <div className="bg-indigo-600 p-4 rounded-2xl shadow-[0_0_25px_rgba(79,70,229,0.4)]">
+                      <DollarSign className="h-8 w-8 text-white" />
+                    </div>
+                    <div>
+                      <span className="font-black text-xl tracking-[0.2em] uppercase text-indigo-100 block">Umumiy Natija</span>
+                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest italic">Fakt vs Reja (Summa)</span>
+                    </div>
+                  </div>
+                  <div className="text-right z-10 mt-6 md:mt-0">
+                    <span className="text-4xl md:text-5xl font-black text-indigo-400 tracking-tighter drop-shadow-[0_0_15px_rgba(79,70,229,0.3)]">
+                      {selectedPlanDetail.facts.sums.overall.total.toLocaleString()}
+                    </span>
+                    <span className="text-base md:text-lg text-slate-500 font-bold ml-2 italic">
+                      / {selectedPlanDetail.plans.sums.overall.total.toLocaleString()} UZS
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="text-right z-10 mt-6 md:mt-0">
-              <span className="text-5xl font-black text-indigo-400 tracking-tighter drop-shadow-[0_0_15px_rgba(79,70,229,0.3)]">
-                {selectedPlanDetail.facts.sums.overall.total.toLocaleString()}
-              </span>
-              <span className="text-lg text-slate-500 font-bold ml-3 italic">
-                / {selectedPlanDetail.plans.sums.overall.total.toLocaleString()} UZS
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    ) : null}
-  </DialogContent>
-</Dialog>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

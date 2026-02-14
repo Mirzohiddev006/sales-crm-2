@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { 
   DollarSign, 
   Book, 
@@ -23,7 +23,7 @@ interface ProgressCircleProps {
   label?: string;
 }
 
-function ProgressCircle({ 
+const ProgressCircle = memo(function ProgressCircle({ 
   percentage, 
   size = 120, 
   strokeWidth = 8, 
@@ -64,7 +64,7 @@ function ProgressCircle({
       </div>
     </div>
   );
-}
+});
 
 export function DashboardPage() {
   const [data, setData] = useState<DashboardResponse | null>(null);

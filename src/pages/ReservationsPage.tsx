@@ -48,7 +48,7 @@ export function ReservationsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Detail dialog states
-  const [selectedUserRes, setSelectedUserRes] = useState<any>(null);
+  const [selectedReservation, setSelectedReservation] = useState<any>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
@@ -85,13 +85,14 @@ export function ReservationsPage() {
     }
   };
 
-  const handleViewDetail = async (userId: number) => {
+  const handleViewDetail = async (reservationId: number) => {
     try {
       setIsLoadingDetail(true);
       setIsDetailOpen(true);
-      // Direct API call to ensure correct endpoint usage
-      const response = await api.get(`/reservations/user/${userId}`);
-      setSelectedUserRes(response.data);
+      
+      // 1. Reservation detail
+      const response = await api.get(`/reservations/${reservationId}`);
+      setSelectedReservation(response.data);
     } catch (err) {
       toast.error("Tafsilotlarni yuklashda xatolik");
     } finally {
@@ -186,12 +187,12 @@ export function ReservationsPage() {
               <TableBody>
                 {reservations.map((res) => (
                   <TableRow 
-                    key={res.latest_reservation_id || res.user_id} 
+                    key={res.id} 
                     className="hover:bg-muted/30 transition-colors cursor-pointer"
-                    onClick={() => handleViewDetail(res.user_id)}
+                    onClick={() => handleViewDetail(res.id)}
                   >
                     <TableCell className="font-mono text-xs text-muted-foreground">
-                      #{res.latest_reservation_id}
+                      #{res.id}
                     </TableCell>
 
                     <TableCell>
@@ -204,13 +205,13 @@ export function ReservationsPage() {
                             className="font-medium text-foreground hover:text-primary transition-colors cursor-pointer"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/clients/${res.user_id}`);
+                              navigate(`/clients/${res.client?.id}`);
                             }}
                           >
-                            {res.client_fullname || "Noma'lum mijoz"}
+                            {res.client?.fullname || `Mijoz #${res.client?.id}`}
                           </span>
                           <span className="text-[10px] text-muted-foreground font-mono">
-                            User ID: {res.user_id}
+                            ID: {res.client?.id}
                           </span>
                         </div>
                       </div>
@@ -249,35 +250,21 @@ export function ReservationsPage() {
 
         {/* User Reservations Detail Dialog */}
 <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-  <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col bg-[#020617] border-[#1e293b] text-slate-200 p-0 shadow-2xl rounded-[2rem]">
+  <DialogContent className="max-w-lg bg-[#020617] border-[#1e293b] text-slate-200 p-0 shadow-2xl rounded-[2rem] overflow-hidden">
     
     {/* Header Section with Glassmorphism */}
     <div className="relative p-8 border-b border-[#1e293b] bg-gradient-to-br from-indigo-500/10 via-transparent to-transparent">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="flex items-center gap-5">
-          <div className="h-16 w-16 rounded-[1.5rem] bg-indigo-600/20 flex items-center justify-center border border-indigo-500/30 shadow-inner">
-            <User className="h-8 w-8 text-indigo-400" />
+          <div className="h-14 w-14 rounded-[1.2rem] bg-indigo-600/20 flex items-center justify-center border border-indigo-500/30 shadow-inner">
+            <Clock className="h-7 w-7 text-indigo-400" />
           </div>
           <div>
-            <h2 className="text-3xl font-black tracking-tight text-slate-100 leading-none">
-              {selectedUserRes?.client_fullname || "Mijoz ma'lumotlari"}
+            <h2 className="text-2xl font-black tracking-tight text-slate-100 leading-none">
+              Reservatsiya #{selectedReservation?.id}
             </h2>
             <p className="text-[10px] uppercase font-bold text-indigo-400/60 tracking-[0.3em] mt-3 italic">
-              Buyurtmalar va Bronlar Tarixi
-            </p>
-          </div>
-        </div>
-        
-        {/* Real-time Stats Badge */}
-        <div className="flex gap-3">
-          <div className="px-5 py-2 bg-slate-900/80 border border-[#1e293b] rounded-2xl text-center shadow-lg">
-            <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest">Jami</p>
-            <p className="text-xl font-black text-indigo-400 leading-none mt-1">{selectedUserRes?.reservations?.length || 0}</p>
-          </div>
-          <div className="px-5 py-2 bg-slate-900/80 border border-[#1e293b] rounded-2xl text-center shadow-lg">
-            <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest">Active</p>
-            <p className="text-xl font-black text-emerald-400 leading-none mt-1">
-              {selectedUserRes?.reservations?.filter((r: any) => r.status === 'pending').length || 0}
+              Batafsil ma'lumot
             </p>
           </div>
         </div>
@@ -285,77 +272,48 @@ export function ReservationsPage() {
     </div>
 
     {/* Content Section with Interactive Cards */}
-    <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-[radial-gradient(circle_at_top_right,#1e293b33,transparent)]">
+    <div className="p-8 bg-[radial-gradient(circle_at_top_right,#1e293b33,transparent)] space-y-6">
       {isLoadingDetail ? (
         <div className="py-24 flex flex-col items-center justify-center gap-4">
           <Loading />
           <p className="text-xs font-bold text-slate-600 uppercase tracking-widest animate-pulse">Ma'lumotlar tahlil qilinmoqda</p>
         </div>
-      ) : selectedUserRes?.reservations?.length === 0 ? (
-        <EmptyState 
-          icon={BookOpen} 
-          title="Tarix mavjud emas" 
-          description="Ushbu mijozda hali hech qanday reservatsiyalar amalga oshirilmagan."
-        />
-      ) : (
-        <div className="grid gap-5">
-          {selectedUserRes?.reservations?.map((item: any) => (
-            <div 
-              key={item.id}
-              className="group relative bg-[#0f172a]/40 border border-[#1e293b] p-6 rounded-[1.25rem] hover:bg-[#0f172a] hover:border-indigo-500/40 transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"
-            >
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="flex items-center gap-5">
-                  <div className="h-12 w-12 rounded-xl bg-slate-950 flex items-center justify-center font-mono text-[10px] font-black text-slate-600 border border-[#1e293b] group-hover:text-indigo-400 group-hover:border-indigo-500/30 transition-colors">
-                    #{item.id}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <span className="font-black text-slate-100 tracking-tight">
-                        {item.order_id ? `Buyurtma #${item.order_id}` : "Bron qilish"}
-                      </span>
-                      <Badge 
-                        variant="outline" 
-                        className={cn(
-                          "text-[9px] h-5 px-2 font-black uppercase tracking-tighter border-none shadow-sm",
-                          statusStyles[item.status] || "bg-slate-800 text-slate-400"
-                        )}
-                      >
-                        {RESERVATION_STATUSES[item.status] || item.status}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-4 mt-2 text-[11px] font-medium">
-                      <span className="flex items-center gap-1.5 text-slate-500">
-                        <Calendar className="h-3.5 w-3.5" />
-                        {formatDate(item.created_at)}
-                      </span>
-                      <span className="w-1 h-1 rounded-full bg-slate-800" />
-                      <span className="flex items-center gap-1.5 text-amber-500/70 font-bold">
-                        <Clock className="h-3.5 w-3.5" />
-                        Limit: {formatDate(item.reserved_until)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="bg-indigo-500/5 text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:text-white hover:bg-indigo-600 rounded-xl px-5 h-9 border border-indigo-500/20 group-hover:border-indigo-500/50 transition-all"
-                  onClick={() => navigate(`/reservations/${item.id}`)}
-                >
-                  Tafsilotlar
-                </Button>
+      ) : selectedReservation && (
+        <div className="space-y-4">
+           <div className="bg-[#0f172a] p-4 rounded-2xl border border-[#1e293b] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                 <div className="p-2 bg-slate-800 rounded-lg text-slate-400"><User size={18} /></div>
+                 <div>
+                    <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Mijoz</p>
+                    <p className="text-sm font-bold text-white">{selectedReservation.client?.fullname}</p>
+                 </div>
               </div>
+              <Button variant="ghost" size="sm" onClick={() => navigate(`/clients/${selectedReservation.client?.id}`)} className="text-indigo-400 text-xs">Ko'rish</Button>
+           </div>
 
-              {/* Progress Bar for Active Status */}
-              {item.status === 'pending' && (
-                <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-slate-950 overflow-hidden rounded-b-[1.25rem]">
-                  <div className="h-full bg-indigo-500 shadow-[0_0_10px_#6366f1] animate-progress-glow" style={{ width: '45%' }} />
-                </div>
-              )}
-            </div>
-          ))}
+           <div className="grid grid-cols-2 gap-4">
+              <div className="bg-[#0f172a] p-4 rounded-2xl border border-[#1e293b]">
+                 <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Status</p>
+                 <Badge className={cn("capitalize", statusStyles[selectedReservation.status])}>
+                    {RESERVATION_STATUSES[selectedReservation.status] || selectedReservation.status}
+                 </Badge>
+              </div>
+              <div className="bg-[#0f172a] p-4 rounded-2xl border border-[#1e293b]">
+                 <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Buyurtma ID</p>
+                 <p className="text-sm font-mono font-bold text-white">#{selectedReservation.order?.id}</p>
+              </div>
+           </div>
+
+           <div className="bg-[#0f172a] p-4 rounded-2xl border border-[#1e293b] space-y-3">
+              <div className="flex justify-between items-center">
+                 <span className="text-xs text-slate-400">Yaratilgan vaqt:</span>
+                 <span className="text-xs font-bold text-white">{formatDate(selectedReservation.created_at)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                 <span className="text-xs text-slate-400">Tugash muddati:</span>
+                 <span className="text-xs font-bold text-amber-500">{formatDate(selectedReservation.reserved_until)}</span>
+              </div>
+           </div>
         </div>
       )}
     </div>
