@@ -73,7 +73,12 @@ export function ConversationsPage() {
 
       // URL parametrida file bo'lsa, avtomatik tanlash
       const fileFromQuery = searchParams.get("file");
-      if (fileFromQuery) {
+      const clientIdFromQuery = searchParams.get("client_id");
+
+      if (clientIdFromQuery) {
+        const found = formattedData.find(c => c.client_id === Number(clientIdFromQuery));
+        if (found) handleConversationSelect(found);
+      } else if (fileFromQuery) {
         const found = formattedData.find(c => c.conversation_file === fileFromQuery);
         if (found) handleConversationSelect(found);
       }

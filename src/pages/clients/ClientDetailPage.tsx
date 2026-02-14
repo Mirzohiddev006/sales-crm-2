@@ -279,7 +279,7 @@ export function ClientDetailPage() {
                               <p className={`text-[10px] font-bold ${textMutedClass} uppercase tracking-wider`}>Chat Tarixi</p>
                               
                               <div 
-                                onClick={() => navigate(`/conversations?file=${encodeURIComponent(client.conversation_file || "")}`)}
+                                onClick={() => navigate(`/conversations?client_id=${client.id}`)}
                                 className="group inline-flex items-center gap-1.5 mt-1.5 cursor-pointer bg-white/5 hover:bg-indigo-500/20 px-3 py-1.5 rounded-lg border border-white/10 hover:border-indigo-500/30 transition-all duration-300" 
                                 title={client.conversation_file}
                               >
