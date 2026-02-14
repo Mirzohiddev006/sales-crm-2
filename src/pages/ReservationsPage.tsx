@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { BookOpen, RefreshCcw, Filter, Clock, User, Calendar } from "lucide-react";
+import { BookOpen, RefreshCcw, Filter, Clock, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
