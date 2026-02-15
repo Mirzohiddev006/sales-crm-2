@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Loader2, Save, Edit } from "lucide-react";
@@ -22,7 +22,8 @@ Select,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { updateOrder, UpdateOrderPayload } from "@/lib/orders";
-import { OrderItem } from "@/types/api";
+import { OrderItem, PDFChannelResponse } from "@/types/api";
+import { pdfChannelsService } from "@/services/pdfChannelsService";
 
 interface EditOrderDialogProps {
 order: OrderItem;
@@ -44,6 +45,19 @@ const ORDER_STATUSES = [
 export function EditOrderDialog({ order, onSuccess }: EditOrderDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [channels, setChannels] = useState<PDFChannelResponse[]>([]);
+
+  useEffect(() => {
+    const fetchChannels = async () => {
+      try {
+        const response = await pdfChannelsService.getAllChannels();
+        setChannels(response.items);
+      } catch (error) {
+        console.error("Failed to fetch channels:", error);
+      }
+    };
+    fetchChannels();
+  }, []);
 
   const { register, handleSubmit, setValue, watch } = useForm<UpdateOrderPayload>({
     defaultValues: {
@@ -89,10 +103,10 @@ export function EditOrderDialog({ order, onSuccess }: EditOrderDialogProps) {
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto bg-[#021026] border-white/10 text-slate-200 shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-[2rem] p-0">
         <DialogHeader className="p-6 pb-4 bg-gradient-to-b from-white/5 to-transparent border-b border-white/5">
           <DialogTitle className="text-xl font-black flex items-center gap-3 tracking-tight">
-             <div className="p-2 bg-indigo-500/10 rounded-xl text-indigo-400 border border-indigo-500/20">
+              <div className="p-2 bg-indigo-500/10 rounded-xl text-indigo-400 border border-indigo-500/20">
                 <Edit className="w-5 h-5" />
-             </div>
-             Buyurtmani tahrirlash #{order.id}
+              </div>
+              Buyurtmani tahrirlash #{order.id}
           </DialogTitle>
         </DialogHeader>
         
@@ -122,22 +136,52 @@ export function EditOrderDialog({ order, onSuccess }: EditOrderDialogProps) {
               <Label className={labelClass}>Format</Label>
               <Input {...register("format")} placeholder="A4, A5..." className={inputClass} />
             </div>
-            <div className="space-y-2">
-              <Label className={labelClass}>Xarid oyi</Label>
-              <Input {...register("purchase_month")} placeholder="Yanvar..." className={inputClass} />
-            </div>
+            {isPdf ? (
+              <div className="space-y-2">
+                <Label className={labelClass}>PDF Kanal (Oy)</Label>
+                <Select 
+                  value={watch("pdf_month_id")?.toString() || "0"} 
+                  onValueChange={(val) => setValue("pdf_month_id", Number(val))}
+                >
+                  <SelectTrigger className={inputClass}>
+                    <SelectValue placeholder="Kanalni tanlang" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#021026] border-white/10 text-slate-200">
+                    {channels.map((channel) => (
+                      <SelectItem key={channel.id} value={channel.id.toString()} className="focus:bg-white/10 focus:text-slate-200 cursor-pointer">
+                        {channel.channel_name} ({channel.channel_month})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label className={labelClass}>Buyurtma soni</Label>
+                <Input 
+                  type="number" 
+                  {...register("order_count", { valueAsNumber: true })} 
+                  className={inputClass}
+                />
+              </div>
+            )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className={labelClass}>Buyurtma soni</Label>
-              <Input 
-                type="number" 
-                {...register("order_count", { valueAsNumber: true })} 
-                className={inputClass}
-              />
+          {isPdf && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className={labelClass}>Buyurtma soni</Label>
+                <Input 
+                  type="number" 
+                  {...register("order_count", { valueAsNumber: true })} 
+                  className={inputClass}
+                />
+              </div>
             </div>
-            {!isPdf && (
+          )}
+
+          {!isPdf && (
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className={labelClass}>Yetkazish kunlari</Label>
                 <Input 
@@ -146,28 +190,15 @@ export function EditOrderDialog({ order, onSuccess }: EditOrderDialogProps) {
                   className={inputClass}
                 />
               </div>
-            )}
-          </div>
-
-          {!isPdf && (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className={labelClass}>BTS Branch ID</Label>
-              <Input 
-                type="number" 
-                {...register("bts_branch_id", { valueAsNumber: true })} 
-                className={inputClass}
-              />
+              <div className="space-y-2">
+                <Label className={labelClass}>BTS Branch ID</Label>
+                <Input 
+                  type="number" 
+                  {...register("bts_branch_id", { valueAsNumber: true })} 
+                  className={inputClass}
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label className={labelClass}>PDF Month ID</Label>
-              <Input 
-                type="number" 
-                {...register("pdf_month_id", { valueAsNumber: true })} 
-                className={inputClass}
-              />
-            </div>
-          </div>
           )}
 
           {!isPdf && (

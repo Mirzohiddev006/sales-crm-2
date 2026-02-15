@@ -20,6 +20,7 @@ import { ErrorState } from "@/components/common/ErrorState";
 import { ClientDialog } from "@/pages/clients/ClientsDialog"; 
 import { EditOrderDialog } from "@/components/EditOrderDialog";
 import { clientsService } from "@/services/clientsService";
+import { pdfChannelsService } from "@/services/pdfChannelsService";
 import { ClientDetailResponse } from "@/types/api";
 import { formatDate, cn } from "@/lib/utils";
 import api from "@/lib/api";
@@ -66,6 +67,8 @@ export function ClientDetailPage() {
     total_income: number;
   } | null>(null);
 
+  const [pdfChannels, setPdfChannels] = useState<any[]>([]);
+
   const fetchClientData = useCallback(async () => {
     if (!id) return;
     try {
@@ -95,6 +98,18 @@ export function ClientDetailPage() {
     setIsLoading(true);
     fetchClientData();
   }, [fetchClientData]);
+
+  useEffect(() => {
+    const fetchChannels = async () => {
+      try {
+        const response = await pdfChannelsService.getAllChannels();
+        setPdfChannels(response.items);
+      } catch (error) {
+        console.error("Failed to fetch channels", error);
+      }
+    };
+    fetchChannels();
+  }, []);
 
   // Real-vaqt rejimida yangilanish (har 5 soniyada)
   useEffect(() => {
@@ -140,6 +155,14 @@ export function ClientDetailPage() {
       setIsSendingTelegram(false);
     }
   }, [selectedOrder, telegramImage, telegramMessage]);
+
+  const getOrderMonthDisplay = (order: any) => {
+    if (order.format === "PDF" && order.pdf_month_id) {
+      const channel = pdfChannels.find(c => c.id === order.pdf_month_id);
+      return channel ? `${channel.channel_name} (${channel.channel_month})` : `ID: ${order.pdf_month_id}`;
+    }
+    return order.purchase_month || order.pdf_month?.month;
+  };
 
   if (isLoading) return <DashboardLayout><Loading fullScreen text="Mijoz ma'lumotlari yuklanmoqda..." /></DashboardLayout>;
   if (error || !client) return <DashboardLayout><ErrorState message={error || "Mijoz topilmadi"} retry={fetchClientData} /></DashboardLayout>;
@@ -460,7 +483,7 @@ export function ClientDetailPage() {
                               </div>
                               <div className="text-[11px] text-slate-400 mt-1 flex gap-3 font-medium uppercase tracking-tight">
                                   <span>Sana: {formatDate(order.created_at)}</span>
-                                  {(order.purchase_month || order.pdf_month?.month) && <span>Oy: {order.purchase_month || order.pdf_month?.month}</span>}
+                                  {getOrderMonthDisplay(order) && <span>Oy: {getOrderMonthDisplay(order)}</span>}
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -520,7 +543,7 @@ export function ClientDetailPage() {
                       </div>
                       <div className="space-y-1">
                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sotuv oyi</span>
-                         <p className="text-sm font-semibold capitalize flex items-center gap-2"><Calendar size={14}/> {selectedOrder.purchase_month || selectedOrder.pdf_month?.month || "Belgilanmagan"}</p>
+                         <p className="text-sm font-semibold capitalize flex items-center gap-2"><Calendar size={14}/> {getOrderMonthDisplay(selectedOrder) || "Belgilanmagan"}</p>
                       </div>
                       <div className="space-y-1">
                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Buyurtma soni</span>
