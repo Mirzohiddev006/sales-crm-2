@@ -18,6 +18,10 @@ import {
 } from "@/components/ui/dialog";
 import {
   Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select"; // Custom Select component usually doesn't export SelectTrigger/SelectValue
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -349,17 +353,20 @@ export function PlansPage() {
               
               <div className="space-y-2">
                 <Label className="text-slate-400">Oy nomi</Label>
-                <Select 
-                  value={formData.month} 
-                  onChange={(e) => setFormData({...formData, month: e.target.value})}
-                  required
-                  className="bg-[#0f172a] border-[#1e293b] focus:ring-1 focus:ring-indigo-500 text-slate-100"
+                <Select
+                  value={formData.month}
+                  onValueChange={(value) => setFormData({ ...formData, month: value })}
                 >
-                  {MONTHS.map((m) => (
-                    <option key={m.value} value={m.value} className="bg-[#0f172a] text-slate-200 p-2 hover:bg-indigo-500/20 cursor-pointer">
-                      {m.label}
-                    </option>
-                  ))}
+                  <SelectTrigger className="bg-[#0f172a] border-[#1e293b] focus:ring-1 focus:ring-indigo-500 text-slate-100">
+                    <SelectValue placeholder="Oyni tanlang" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#0f172a] border-[#1e293b] text-slate-200">
+                    {MONTHS.map((m) => (
+                      <SelectItem key={m.value} value={m.value} className="hover:bg-indigo-500/20 cursor-pointer">
+                        {m.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
 
