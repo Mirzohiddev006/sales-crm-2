@@ -326,8 +326,8 @@ export function PlansPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="bg-slate-950/50 border border-[#1e293b] p-3 rounded-lg flex items-center justify-between">
-                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Leadlar rejasi:</span>
-                     <span className="font-black text-indigo-400 text-lg">{plan.total_lead} ta</span>
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Leadlar rejasi:</span>
+                      <span className="font-black text-indigo-400 text-lg">{plan.total_lead} ta</span>
                   </div>
                 </CardContent>
               </Card>

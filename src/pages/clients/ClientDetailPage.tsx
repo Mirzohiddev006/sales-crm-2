@@ -18,6 +18,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Loading } from "@/components/common/Loading";
 import { ErrorState } from "@/components/common/ErrorState";
 import { ClientDialog } from "@/pages/clients/ClientsDialog"; 
+import { EditOrderDialog } from "@/components/EditOrderDialog";
 import { clientsService } from "@/services/clientsService";
 import { ClientDetailResponse } from "@/types/api";
 import { formatDate, cn } from "@/lib/utils";
@@ -94,6 +95,14 @@ export function ClientDetailPage() {
   useEffect(() => {
     fetchClientData();
   }, [fetchClientData]);
+
+  // Dialog ochiq bo'lsa va ma'lumot yangilansa, ro'yxatni ham yangilash
+  useEffect(() => {
+    if (isOrdersDialogOpen && ordersType && orderData) {
+      const filtered = orderData.orders.filter((o: any) => o.format === ordersType);
+      setOrdersList(filtered);
+    }
+  }, [orderData, isOrdersDialogOpen, ordersType]);
 
   const handleSendTelegram = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -346,6 +355,9 @@ export function ClientDetailPage() {
                             )}>
                               {order.status}
                             </div>
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <EditOrderDialog order={order} onSuccess={fetchClientData} />
+                            </div>
                             <Eye className="h-4 w-4 text-slate-500 group-hover:text-blue-400 transition-colors" />
                           </div>
                         </div>
@@ -439,8 +451,8 @@ export function ClientDetailPage() {
                                 {order.bts_branch_id && <Badge variant="outline" className="text-[10px] border-white/20 text-slate-400">BTS ID: {order.bts_branch_id}</Badge>}
                               </div>
                               <div className="text-[11px] text-slate-400 mt-1 flex gap-3 font-medium uppercase tracking-tight">
-                                 <span>Sana: {formatDate(order.created_at)}</span>
-                                 {(order.purchase_month || order.pdf_month?.month) && <span>Oy: {order.purchase_month || order.pdf_month?.month}</span>}
+                                  <span>Sana: {formatDate(order.created_at)}</span>
+                                  {(order.purchase_month || order.pdf_month?.month) && <span>Oy: {order.purchase_month || order.pdf_month?.month}</span>}
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -448,6 +460,9 @@ export function ClientDetailPage() {
                                     "capitalize text-[10px] font-bold",
                                     order.status === 'completed' ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-white/5 text-slate-300"
                                 )}>{order.status}</Badge>
+                                <div onClick={(e) => e.stopPropagation()}>
+                                  <EditOrderDialog order={order} onSuccess={fetchClientData} />
+                                </div>
                                 <Eye className="h-3.5 w-3.5 text-slate-500" />
                             </div>
                           </div>

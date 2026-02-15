@@ -166,7 +166,7 @@ export function ClientDialog({
 
             {/* File & ID */}
             <div className="grid grid-cols-2 gap-4">
-               <div className="space-y-2 col-span-1">
+                <div className="space-y-2 col-span-1">
                 <Label htmlFor="telegram_id" className={labelClass}>Telegram ID</Label>
                 <Input id="telegram_id" placeholder="1234567" className={inputClass} {...register("telegram_id")} />
               </div>

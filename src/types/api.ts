@@ -55,6 +55,11 @@ export interface OrderItem {
   purchase_month: string | null;
   status: string;
   created_at: string;
+  shipping_info?: string;
+  order_count?: number;
+  bts_branch_id?: number;
+  delivery_days?: number;
+  pdf_month_id?: number;
 }
 
 export interface ReservationItem {

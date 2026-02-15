@@ -188,8 +188,8 @@ export function DashboardPage() {
                 {/* 1. UMUMIY NATIJA (Endi 1-chi o'rinda) */}
                 <div className="flex flex-col items-center space-y-4 relative z-10 md:border-r border-border/50 pr-0 md:pr-4">
                   <div className="relative">
-                     <div className="absolute inset-0 bg-primary/5 blur-3xl rounded-full" />
-                     <ProgressCircle 
+                      <div className="absolute inset-0 bg-primary/5 blur-3xl rounded-full" />
+                      <ProgressCircle 
                       percentage={current_month_plan.percents.overall} 
                       color="hsl(38 92% 50%)"
                       label="Umumiy"
@@ -201,7 +201,7 @@ export function DashboardPage() {
                   <div className="text-center space-y-2">
                     <p className="text-lg font-bold text-primary">Jami Bajarildi</p>
                     <div className="space-y-1">
-                       <p className="text-sm font-semibold">
+                        <p className="text-sm font-semibold">
                         {current_month_plan.facts.overall.count} / {current_month_plan.plans.overall.count} ta
                       </p>
                       <p className="text-sm text-muted-foreground font-mono">

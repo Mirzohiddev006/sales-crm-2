@@ -129,7 +129,7 @@ export function ReservationsPage() {
         />
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-         <div className="flex items-center gap-2 bg-[#020617]/60 backdrop-blur-md p-1 rounded-xl border border-indigo-500/20 shadow-[0_0_15px_rgba(0,0,0,0.2)]">
+          <div className="flex items-center gap-2 bg-[#020617]/60 backdrop-blur-md p-1 rounded-xl border border-indigo-500/20 shadow-[0_0_15px_rgba(0,0,0,0.2)]">
   <div className="flex items-center gap-2 px-3 py-1.5 text-xs font-black uppercase tracking-widest text-indigo-400/70 border-r border-[#1e293b]">
     <Filter className="h-3.5 w-3.5" />
     <span>Filter</span>
@@ -280,40 +280,40 @@ export function ReservationsPage() {
         </div>
       ) : selectedReservation && (
         <div className="space-y-4">
-           <div className="bg-[#0f172a] p-4 rounded-2xl border border-[#1e293b] flex items-center justify-between">
+            <div className="bg-[#0f172a] p-4 rounded-2xl border border-[#1e293b] flex items-center justify-between">
               <div className="flex items-center gap-3">
-                 <div className="p-2 bg-slate-800 rounded-lg text-slate-400"><User size={18} /></div>
-                 <div>
+                  <div className="p-2 bg-slate-800 rounded-lg text-slate-400"><User size={18} /></div>
+                  <div>
                     <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Mijoz</p>
                     <p className="text-sm font-bold text-white">{selectedReservation.client?.fullname}</p>
-                 </div>
+                  </div>
               </div>
               <Button variant="ghost" size="sm" onClick={() => navigate(`/clients/${selectedReservation.client?.id}`)} className="text-indigo-400 text-xs">Ko'rish</Button>
-           </div>
+            </div>
 
-           <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="bg-[#0f172a] p-4 rounded-2xl border border-[#1e293b]">
-                 <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Status</p>
-                 <Badge className={cn("capitalize", statusStyles[selectedReservation.status])}>
+                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Status</p>
+                  <Badge className={cn("capitalize", statusStyles[selectedReservation.status])}>
                     {RESERVATION_STATUSES[selectedReservation.status] || selectedReservation.status}
-                 </Badge>
+                  </Badge>
               </div>
               <div className="bg-[#0f172a] p-4 rounded-2xl border border-[#1e293b]">
-                 <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Buyurtma ID</p>
-                 <p className="text-sm font-mono font-bold text-white">#{selectedReservation.order?.id}</p>
+                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Buyurtma ID</p>
+                  <p className="text-sm font-mono font-bold text-white">#{selectedReservation.order?.id}</p>
               </div>
-           </div>
+            </div>
 
-           <div className="bg-[#0f172a] p-4 rounded-2xl border border-[#1e293b] space-y-3">
+            <div className="bg-[#0f172a] p-4 rounded-2xl border border-[#1e293b] space-y-3">
               <div className="flex justify-between items-center">
-                 <span className="text-xs text-slate-400">Yaratilgan vaqt:</span>
-                 <span className="text-xs font-bold text-white">{formatDate(selectedReservation.created_at)}</span>
+                  <span className="text-xs text-slate-400">Yaratilgan vaqt:</span>
+                  <span className="text-xs font-bold text-white">{formatDate(selectedReservation.created_at)}</span>
               </div>
               <div className="flex justify-between items-center">
-                 <span className="text-xs text-slate-400">Tugash muddati:</span>
-                 <span className="text-xs font-bold text-amber-500">{formatDate(selectedReservation.reserved_until)}</span>
+                  <span className="text-xs text-slate-400">Tugash muddati:</span>
+                  <span className="text-xs font-bold text-amber-500">{formatDate(selectedReservation.reserved_until)}</span>
               </div>
-           </div>
+            </div>
         </div>
       )}
     </div>
