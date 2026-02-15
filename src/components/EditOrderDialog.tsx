@@ -45,7 +45,7 @@ export function EditOrderDialog({ order, onSuccess }: EditOrderDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { register, handleSubmit, setValue } = useForm<UpdateOrderPayload>({
+  const { register, handleSubmit, setValue, watch } = useForm<UpdateOrderPayload>({
     defaultValues: {
       status: order.status,
       format: order.format || "",
@@ -57,6 +57,9 @@ export function EditOrderDialog({ order, onSuccess }: EditOrderDialogProps) {
       pdf_month_id: order.pdf_month_id || 0,
     },
   });
+
+  const format = watch("format");
+  const isPdf = format?.toUpperCase() === "PDF";
 
   const onSubmit = async (data: UpdateOrderPayload) => {
     try {
@@ -134,16 +137,19 @@ export function EditOrderDialog({ order, onSuccess }: EditOrderDialogProps) {
                 className={inputClass}
               />
             </div>
-            <div className="space-y-2">
-              <Label className={labelClass}>Yetkazish kunlari</Label>
-              <Input 
-                type="number" 
-                {...register("delivery_days", { valueAsNumber: true })} 
-                className={inputClass}
-              />
-            </div>
+            {!isPdf && (
+              <div className="space-y-2">
+                <Label className={labelClass}>Yetkazish kunlari</Label>
+                <Input 
+                  type="number" 
+                  {...register("delivery_days", { valueAsNumber: true })} 
+                  className={inputClass}
+                />
+              </div>
+            )}
           </div>
 
+          {!isPdf && (
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className={labelClass}>BTS Branch ID</Label>
@@ -162,7 +168,9 @@ export function EditOrderDialog({ order, onSuccess }: EditOrderDialogProps) {
               />
             </div>
           </div>
+          )}
 
+          {!isPdf && (
           <div className="space-y-2">
             <Label className={labelClass}>Yetkazib berish ma'lumotlari</Label>
             <Textarea 
@@ -171,6 +179,7 @@ export function EditOrderDialog({ order, onSuccess }: EditOrderDialogProps) {
               className={`${inputClass} min-h-[80px] py-2`}
             />
           </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
             <Button type="button" variant="ghost" onClick={() => setOpen(false)} className="text-slate-500 hover:text-slate-300 font-bold tracking-widest text-[10px]">
