@@ -61,7 +61,6 @@ export function ClientsListPage() {
 
   const fetchClients = async () => {
     try {
-      setIsLoading(true);
       setError(null);
       const data = await clientsService.getAllClients(100, 0); 
       setClients(data.items);
@@ -73,7 +72,11 @@ export function ClientsListPage() {
   };
 
   useEffect(() => {
+    setIsLoading(true);
     fetchClients();
+
+    const interval = setInterval(fetchClients, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleDelete = async (_id: number, e: React.MouseEvent) => {

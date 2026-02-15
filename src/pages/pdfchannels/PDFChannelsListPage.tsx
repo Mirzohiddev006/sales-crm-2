@@ -22,7 +22,6 @@ export function PDFChannelsListPage() {
 
   const fetchChannels = async () => {
     try {
-      setIsLoading(true);
       setError(null);
       const data = await pdfChannelsService.getAllChannels();
       setChannels(data.items);
@@ -34,7 +33,11 @@ export function PDFChannelsListPage() {
   };
 
   useEffect(() => {
+    setIsLoading(true);
     fetchChannels();
+
+    const interval = setInterval(fetchChannels, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleDelete = async (id: number) => {

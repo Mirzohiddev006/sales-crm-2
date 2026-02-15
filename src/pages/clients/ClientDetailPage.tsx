@@ -69,7 +69,6 @@ export function ClientDetailPage() {
   const fetchClientData = useCallback(async () => {
     if (!id) return;
     try {
-      setIsLoading(true);
       setError(null);
 
       // Fetch client details and order data in parallel
@@ -93,7 +92,16 @@ export function ClientDetailPage() {
   }, [id]);
 
   useEffect(() => {
+    setIsLoading(true);
     fetchClientData();
+  }, [fetchClientData]);
+
+  // Real-vaqt rejimida yangilanish (har 5 soniyada)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchClientData();
+    }, 5000);
+    return () => clearInterval(interval);
   }, [fetchClientData]);
 
   // Dialog ochiq bo'lsa va ma'lumot yangilansa, ro'yxatni ham yangilash

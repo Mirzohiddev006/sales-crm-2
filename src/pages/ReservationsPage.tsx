@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { BookOpen, RefreshCcw, Filter, Clock, User } from "lucide-react";
@@ -52,9 +52,8 @@ export function ReservationsPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
-  const fetchReservations = async () => {
+  const fetchReservations = useCallback(async () => {
     try {
-      setIsLoading(true);
       setError(null);
       const params: any = {};
       if (statusFilter) params.status = statusFilter;
@@ -73,7 +72,7 @@ export function ReservationsPage() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  };
+  }, [statusFilter]);
 
   const handleRefresh = async () => {
     try {
@@ -101,8 +100,12 @@ export function ReservationsPage() {
   };
 
   useEffect(() => {
+    setIsLoading(true);
     fetchReservations();
-  }, [statusFilter]);
+
+    const interval = setInterval(fetchReservations, 5000);
+    return () => clearInterval(interval);
+  }, [fetchReservations]);
 
   if (isLoading) {
     return (

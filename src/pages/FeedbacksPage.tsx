@@ -27,7 +27,6 @@ export function FeedbacksPage() {
 
   const fetchFeedbacks = async () => {
     try {
-      setIsLoading(true);
       setError(null);
       const response = await feedbacksService.getAllFeedbacks();
       setFeedbacks(response.items || []);
@@ -46,7 +45,11 @@ export function FeedbacksPage() {
   };
 
   useEffect(() => {
+    setIsLoading(true);
     fetchFeedbacks();
+
+    const interval = setInterval(fetchFeedbacks, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   if (isLoading) {
