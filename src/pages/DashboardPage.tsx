@@ -59,7 +59,7 @@ const ProgressCircle = memo(function ProgressCircle({
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-bold">{Math.round(percentage)}%</span>
+        <span className="text-2xl font-bold">{percentage}%</span>
         {label && <span className="text-xs text-muted-foreground mt-1">{label}</span>}
       </div>
     </div>
@@ -73,7 +73,6 @@ export function DashboardPage() {
 
   const fetchDashboard = async () => {
     try {
-      setIsLoading(true);
       setError(null);
       const response = await dashboardService.getDashboardData();
       setData(response);
@@ -86,7 +85,11 @@ export function DashboardPage() {
   };
 
   useEffect(() => {
+    setIsLoading(true);
     fetchDashboard();
+
+    const interval = setInterval(fetchDashboard, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   if (isLoading) {
